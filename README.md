@@ -61,4 +61,13 @@ results/
     ├── dns.json
     └── master_report.json
 ```
+
+# Core Capabilities (The "Secret Sauce")
+
+    Low-Noise Recon: Layered discovery using subfinder, assetfinder, and dnsx to map the attack surface without triggering basic alarms.
+
+    Automated Exploit Matching: Real-time correlation between detected service versions and the Exploit-DB local database.
+
+    Unified Intelligence Object: Consolidates multiple tool outputs into a single, structured MASTER_REPORT.json for easy parsing or API integration.
+    
 <img width="951" height="630" alt="2026-03-29_17-59-37" src="https://github.com/user-attachments/assets/3045c9a3-ed8d-4549-882c-ff6c54ea5d8a" />
