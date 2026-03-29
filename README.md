@@ -36,6 +36,7 @@ whois	whois	whois
 
 `IMPORTANT: If your distribution cannot find a specific package, search for the binary name. The installer checks for the command's existence in your $PATH, not the distribution's package name.`
 
+once downloaded searchsploit execute on your terminal `searchsploit -u` to update it db
     
 ### Then execute the installer
 
