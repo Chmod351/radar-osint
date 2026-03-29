@@ -1,3 +1,4 @@
+
 ```bash
   _______  _______  ______   _______  _______ 
  (  ____ )(  ___  )(  __  \ (  ___  )(  ____ )
@@ -60,3 +61,4 @@ results/
     ├── dns.json
     └── master_report.json
 ```
+<img width="951" height="630" alt="2026-03-29_17-59-37" src="https://github.com/user-attachments/assets/3045c9a3-ed8d-4549-882c-ff6c54ea5d8a" />
