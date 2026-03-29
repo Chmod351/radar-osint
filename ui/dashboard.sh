@@ -1,8 +1,8 @@
 #!/bin/bash
 source "$(dirname "$0")/../env.sh"
 TARGET="$1"
-REPORT="$RESULTS_BASE/$TARGET"/MASTER_REPORT.json"
-VULNS_FILE="$RESULTS_BASE/$TARGET"/vulnerabilities.json" # <--- Referencia al nuevo archivo
+REPORT="$RESULTS_BASE/$TARGET/MASTER_REPORT.json"
+VULNS_FILE="$RESULTS_BASE/$TARGET/vulnerabilities.json" # <--- Referencia al nuevo archivo
 
 if [[ ! -f "$REPORT" ]]; then
     echo -e "\e[31m[-] No se encontró el reporte maestro en $REPORT\e[0m"
