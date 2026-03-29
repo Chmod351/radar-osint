@@ -12,8 +12,7 @@ export RESULTS_BASE="$RADAR_ROOT/results"
 export DEPENDENCIES=(nmap jq curl whois whatweb searchsploit dnsx sed awk httpx-toolkit dig subfinder assetfinder)
 
 
-# Asegura que la carpeta base de salida exista
-mkdir -p "$OUTPUT_DIR"
+
 
 
 GREEN='\e[32m'
@@ -36,7 +35,6 @@ export -f log_warn
 
 
 show_banner() {
-    clear # Limpiamos la pantalla para que el Dashboard sea el protagonista
     echo -e "${CYAN}"
     cat << "EOF"
     _______  _______  ______   _______  _______ 

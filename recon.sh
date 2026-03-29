@@ -12,8 +12,8 @@ if [ -z "$TARGET" ]; then
 fi
 
 # Definimos la carpeta específica para este escaneo
-export TARGET_OUTPUT="$OUTPUT_BASE_DIR/$TARGET"
-mkdir -p "$TARGET_OUTPUT"
+export OUTPUT_DIR="$RESULTS_BASE/$TARGET"
+mkdir -p "$OUTPUT_DIR"
 
 echo "📡 Radar Operativo | Target: $TARGET"
 echo "📂 Resultados en: $TARGET_RESULTS"
@@ -32,7 +32,7 @@ bash "$MODULES_DIR/intel.sh" "$TARGET"
 echo "[FASE 4] Intervención manual requerida"
 
 echo "[+] Targets EXPUESTOS detectados (sin CDN):"
-EXPOSED_LIST=$(jq -r ".\"$TARGET\".subdomains[] | select(.status == \"exposed\") | .host" "$OP_DIR/lowNoice.json")
+EXPOSED_LIST=$(jq -r ".\"$TARGET\".subdomains[] | select(.status == \"exposed\") | .host" "$RESULTS_BASE/$TARGET/lowNoice.json")
 
 if [[ -n "$EXPOSED_LIST" ]]; then
     echo "$EXPOSED_LIST" | nl -w2 -s'. '
@@ -77,9 +77,10 @@ echo "[+] Generando reporte maestro final..."
 bash "$PROCESSORS_DIR/merger.sh" "$TARGET"
 
 echo "[FASE 8] Buscando Vulnerabilidades Conocidas..."
+
 bash "$PROCESSORS_DIR/vulnerability_matcher.sh" "$TARGET"
 
-bash "$SCRIPT_DIR/output/dashboard.sh" "$TARGET"
+bash "$UI_DIR/dashboard.sh" "$TARGET"
 
 
 
