@@ -12,7 +12,7 @@
 ```
 
 #   Clone the repository:
-```git clone [https://github.com/tu-usuario/radar.git](https://github.com/tu-usuario/radar.git) cd radar```
+```git clone https://github.com/Chmod351/radar-osint cd radar```
 
 ### Requieremnts :
 
