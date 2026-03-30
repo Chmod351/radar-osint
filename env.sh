@@ -9,7 +9,7 @@ export MODULES_DIR="$RADAR_ROOT/modules"
 export PROCESSORS_DIR="$RADAR_ROOT/processors"
 export UI_DIR="$RADAR_ROOT/ui"
 export RESULTS_BASE="$RADAR_ROOT/results"
-export DEPENDENCIES=(nmap jq curl whois whatweb searchsploit dnsx sed awk httpx-toolkit dig subfinder assetfinder)
+# export DEPENDENCIES=(nmap jq curl whois whatweb searchsploit dnsx sed awk httpx-toolkit dig subfinder assetfinder)
 
 
 
