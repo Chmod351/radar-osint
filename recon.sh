@@ -44,19 +44,24 @@ echo ""
 read -p "Presioná ENTER para continuar con análisis manual..."
 
 # ----------------------------------------------
-echo "[FASE 5] Selección de objetivo"
+echo -e "\n[FASE 5] Evaluación de Objetivos Expuestos"
 
-DEFAULT_TARGET=$(echo "$EXPOSED_LIST" | head -n 1)
+# 1. Informamos al operador qué hay "en bolas" (sin CDN)
+if [[ -n "$EXPOSED_LIST" ]]; then
+    echo -e "\e[32m[+] Los siguientes activos se encontraron EXPUESTOS (Sin WAF/CDN):\e[0m"
+    echo "$EXPOSED_LIST" | sed 's/^/  --> /'
+else
+    echo -e "\e[33m[!] No se detectaron activos expuestos directamente.\e[0m"
+fi
 
-read -p "Ingresá URL o dominio [$DEFAULT_TARGET]: " SELECTED_URL
+echo -e "\n\e[1;37m[i] El análisis profundo se ejecutará sobre el objetivo raíz:\e[0m \e[36m$TARGET\e[0m"
+read -p "Presioná ENTER para proseguir con el análisis manual..."
 
-# Si el usuario le da ENTER, usamos el default. Si no hay default, usamos el TARGET original.
-SELECTED_URL=${SELECTED_URL:-${DEFAULT_TARGET:-$TARGET}}
+# 2. Normalizamos el HOST para las fases siguientes (Siempre el TARGET)
+SELECTED_URL="$TARGET"
+HOST=$(echo "$SELECTED_URL" | sed 's|http[s]*://||; s|/||g')
 
-echo "[+] Objetivo seleccionado: $SELECTED_URL"
-
-HOST=$(echo "$SELECTED_URL" | sed 's|http[s]*://||')
-
+echo -e "\n[+] Objetivo en la mira: \e[1;32m$HOST\e[0m"
 echo "[FASE 6] Identificando Tecnologías Web en $HOST..."
 # Corremos WhatWeb antes de Nmap para saber a qué nos enfrentamos
 bash "$MODULES_DIR/web_discovery.sh" "$HOST"
