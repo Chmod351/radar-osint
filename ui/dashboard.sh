@@ -1,15 +1,17 @@
 #!/bin/bash
+
 source "$(dirname "$0")/../env.sh"
+
 TARGET="$1"
 REPORT="$RESULTS_BASE/$TARGET/MASTER_REPORT.json"
-VULNS_FILE="$RESULTS_BASE/$TARGET/vulnerabilities.json" # <--- Referencia al nuevo archivo
+VULNS_FILE="$RESULTS_BASE/$TARGET/vulnerabilities.json"
 
 if [[ ! -f "$REPORT" ]]; then
     echo -e "\e[31m[-] No se encontró el reporte maestro en $REPORT\e[0m"
     exit 1
 fi
 
-# Colores
+# === PALETA DE COLORES ===
 GREEN='\e[32m'
 RED='\e[31m'
 CYAN='\e[36m'
@@ -19,67 +21,91 @@ MAGENTA='\e[35m'
 NC='\e[0m'
 
 echo -e "${BLUE}=== DASHBOARD OPERATIVO: $TARGET ===${NC}\n"
-show_banner
+
 # Encabezado
-printf "%-30s | %-15s | %-15s | %-15s\n" "HOST" "IP" "STATUS" "NETNAME"
+printf "%-35s | %-15s | %-12s | %-18s\n" "HOST" "IP" "STATUS" "RANGE/CIDR"
 echo "---------------------------------------------------------------------------------------"
 
-for row in $(jq -r ".\"$TARGET\".subdomains[] | @base64" "$REPORT"); do
+# Iteración segura
+jq -r --arg t "$TARGET" '.[$t].subdomains[] | @base64' "$REPORT" | while read -r row; do
     
     decode_row=$(echo "$row" | base64 --decode)
-    
+
+    # === FUNCION SAFE GET ===
     _get() {
-        echo "$decode_row" | jq -r "$1"
+        local val=$(echo "$decode_row" | jq -r "$1 // empty")
+        [[ "$val" == "null" || "$val" == "Unknown" || -z "$val" ]] && echo "-" || echo "$val"
     }
 
     HOST=$(_get '.host')
     IP=$(_get '.ip')
     STATUS=$(_get '.status')
-    NETNAME=$(_get '.whois.ip_info.netname // "N/A"')
-    ORG=$(_get '.whois.ip_info.org // "N/A"')
-    COUNTRY=$(_get '.whois.ip_info.country // "N/A"')
-    REGISTRAR=$(_get '.whois.domain_info.registrar // "N/A"')
-    CREATED=$(_get '.whois.domain_info.created // "N/A"')
+
+    RANGE=$(_get '.infra.range')
+    OWNER=$(_get '.infra.owner')
+    COUNTRY=$(_get '.infra.country')
+    PROVIDER=$(_get '.infra.provider')
+
+    ASN=$(echo "$decode_row" | jq -r '.infra.asn // empty' | grep -oE "AS[0-9]+" || echo "-")
+
+    CONTACT=$(echo "$decode_row" | jq -r '.full_whois[]? | select(has("e-mail")) | ."e-mail"' | head -n1)
+    [[ -z "$CONTACT" ]] && CONTACT="-"
 
     [[ "$STATUS" == "exposed" ]] && S_COL="${RED}${STATUS}${NC}" || S_COL="${GREEN}${STATUS}${NC}"
 
-    # 1. Fila Principal
-    printf "%-39b | %-15s | %-24b | %-15s\n" "$CYAN$HOST$NC" "$IP" "$S_COL" "$NETNAME"
+    # === HEADER PRINCIPAL ===
+    printf "%-44b | %-15s | %-18b | %-18s\n" "$CYAN$HOST$NC" "$IP" "$S_COL" "$RANGE"
 
-    # 2. Puertos
+    # === PORTS ===
     echo -e "${YELLOW}    [PORTS]${NC}"
-    echo "$decode_row" | jq -r '.ports[]? | "     - \(.port)/\(.service) (\(.version))"'
 
-    # --- NUEVA SECCIÓN: VULNERABILIDADES ---
+    PORTS_RAW=$(echo "$decode_row" | jq -r '.ports[]? | "\(.port)|\(.service)|\(.version // "unknown")"' 2>/dev/null)
+
+    if [[ -n "$PORTS_RAW" ]]; then
+        while IFS="|" read -r PORT SERVICE VERSION; do
+
+            if [[ "$PORT" == "22" || "$SERVICE" == "ssh" ]]; then
+                COLOR=$RED
+            elif [[ "$PORT" == "80" || "$PORT" == "443" ]]; then
+                COLOR=$GREEN
+            else
+                COLOR=$CYAN
+            fi
+
+            printf "      - %b\n" "${COLOR}${PORT}/${SERVICE} (${VERSION})${NC}"
+
+        done <<< "$PORTS_RAW"
+    else
+        echo -e "      ${MAGENTA}No ports detected.${NC}"
+    fi
+
+    # === INTEL ===
+    echo -e "${BLUE}    [INTEL]${NC}"
+
+    SHORT_OWNER=$(echo "$OWNER" | cut -c1-40)
+
+    printf "      Org: %-40s | Country: %s\n" "$SHORT_OWNER" "$COUNTRY"
+    printf "      ASN: %-15s | Prov: %-15s | Admin: %s\n" "$ASN" "$PROVIDER" "$CONTACT"
+
+    # === VULNERABILIDADES ===
     if [[ -f "$VULNS_FILE" ]]; then
-        # Buscamos en el archivo de vulnerabilidades si hay algo para este host
-        # (Asumiendo que el matcher guarda el link y el título)
         echo -e "${RED}    [VULNS]${NC}"
-        
-        # Filtramos las vulnerabilidades que coincidan con los servicios de este host
-        # Para el MVP, si el matcher es general por target, mostramos las globales del target:
-        VULN_DATA=$(jq -r '.matches[]? | "     - [!] \(.title)\n       Link: \(.link)"' "$VULNS_FILE" | head -n 4)
-        
+
+        VULN_DATA=$(jq -r --arg h "$HOST" '
+            .matches[]? 
+            | select(.host == $h or .host == "all") 
+            | "      - [!] \(.title)\n        Link: \(.link)"
+        ' "$VULNS_FILE" 2>/dev/null | head -n 4)
+
         if [[ -n "$VULN_DATA" ]]; then
             echo -e "$VULN_DATA"
         else
-            echo -e "     ${GREEN}No known exploits found.${NC}"
+            echo -e "      ${GREEN}No known exploits found.${NC}"
         fi
     fi
 
-    # --- NUEVA SECCIÓN: WEB TECHNOLOGIES ---
-    WEB_TECH=$(_get '.web_tech[]? | "\(.name) (\(.version))"' | tr '\n' ',' | sed 's/,$//')
-    if [[ -n "$WEB_TECH" && "$WEB_TECH" != "null" ]]; then
-        echo -e "${MAGENTA}    [WEB-STACK]${NC}"
-        echo -e "     $WEB_TECH"
-    fi
+    echo "---------------------------------------------------------------------------------------"
 
-    # 3. Bloque Intel
-    echo -e "${BLUE}    [INTEL]${NC}"
-    printf "     Org: %-30s | Country: %s\n" "$ORG" "$COUNTRY"
-    printf "     Reg: %-30s | Created: %s\n" "$REGISTRAR" "$CREATED"
-    
-    echo -e "---------------------------------------------------------------------------------------"
 done
 
-
+echo -e "\n${GREEN}● [$(whoami)@archlinux] radar de largo alcance sincronizado.${NC}"
