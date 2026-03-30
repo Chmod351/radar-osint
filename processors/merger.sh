@@ -19,16 +19,16 @@ if [[ ! -f "$LOW_NOISE" ]]; then
     exit 1
 fi
 
-# El merge quirúrgico:
 # Usamos --argjson para pasar los archivos si existen, o un objeto vacío si no.
+# ... dentro de merger.sh
 jq --arg target "$TARGET" \
    --argjson whois "$(cat "$WHOIS" 2>/dev/null || echo '{}')" \
    --argjson intel "$(cat "$INTEL" 2>/dev/null || echo '{}')" \
-   --argjson web "$(cat "$OUTPUT_WEB" 2>/dev/null || echo '{}')" \
    '
    .[$target].subdomains |= map(
      .host as $h | 
-     . + ($whois[$h] // {}) + ($intel[$h] // {}) + ($web[$h] // {})
+     # Usamos * para que los datos se fusionen recursivamente
+     . * ($intel[$h] // {}) * ($whois[$h] // {})
    )
 ' "$LOW_NOISE" > "$OUTPUT_MAESTRO"
 
