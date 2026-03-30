@@ -1,19 +1,11 @@
 #!/bin/bash
 
-# 1. Cargas las rutas base
 source "$(dirname "$0")/../env.sh"
-
-# 2. Tomas el target del argumento
 TARGET="$1"
-
 OP_DIR="$RESULTS_BASE/$TARGET"
-
-
-
 INPUT_JSON="$OP_DIR/lowNoice.json"
 OUTPUT_FILE="$OP_DIR/whois_ips.json"
 
-# Verificación de entrada
 if [[ ! -f "$INPUT_JSON" ]]; then
     log_error "No existe el reporte de la Fase 1 ($INPUT_JSON)"
     exit 1
@@ -22,54 +14,89 @@ fi
 log_info "---[INTEL ENHANCED] Enriqueciendo con WHOIS y DIG (DNS)---"
 echo "{}" > "$OUTPUT_FILE"
 
-# Acceso seguro a la llave dinámica del JSON
-jq -r --arg t "$TARGET" '.[$t].subdomains[] | "\(.host) \(.ip)"' "$INPUT_JSON" | while read -r domain ip; do
+identify_provider() {
+    local ip=$1
+    local ptr=$(host "$ip" 2>/dev/null | awk '{print $NF}' | tr '[:upper:]' '[:lower:]')
+    
+    if [[ "$ptr" =~ "amazonaws" ]]; then echo "Amazon"; return 1; fi
+    if [[ "$ptr" =~ "cloudflare" ]]; then echo "Cloudflare"; return 1; fi
+    if [[ "$ptr" =~ "google" ]]; then echo "Google"; return 1; fi
+    if [[ "$ptr" =~ "msn.com" || "$ptr" =~ "azure" ]]; then echo "Microsoft"; return 1; fi
+    if [[ "$ip" =~ ^10\. || "$ip" =~ ^172\.16\. || "$ip" =~ ^192\.168\. ]]; then echo "Internal_Leak"; return 1; fi
+    
+    echo "Self-Hosted/Local"
+    return 0
+}
 
-    if [[ ! "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-        log_warn "Saltando $domain: IP inválida ($ip)"
+# --- LOOP DE PROCESAMIENTO ---
+jq -r --arg t "$TARGET" '.[$t].subdomains[] | "\(.host) \(.ip)"' "$INPUT_JSON" | while read -r domain ip; do
+    
+    if [[ ! "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then continue; fi
+
+    PROVIDER=$(identify_provider "$ip")
+    IS_LOCAL=$? 
+
+    if [ $IS_LOCAL -eq 1 ]; then
+        echo -e "${YELLOW}[-]${NC} Cloud detectado ($PROVIDER): $domain"
+        jq --arg dom "$domain" --arg ip "$ip" --arg prov "$PROVIDER" \
+           '.[$dom] = { "ip": $ip, "infra": { "provider": $prov, "type": "cloud" }, "status": "protected" }' \
+           "$OUTPUT_FILE" > "$OUTPUT_FILE.tmp" && mv "$OUTPUT_FILE.tmp" "$OUTPUT_FILE"
         continue
     fi
 
-    echo -e "${GREEN}[+]${NC} Analizando: ${CYAN}$domain${NC} ($ip)"
+    echo -e "${GREEN}[+]${NC} Analizando PROFUNDO (Local): ${CYAN}$domain${NC} ($ip)"
 
-    # --- 1. CAPA WHOIS ---
-    IP_DATA=$(whois "$ip" 2>/dev/null)
-    NET=$(echo "$IP_DATA" | awk -F': *' 'tolower($1) ~ /netname/ {print $2}' | head -n1 | xargs)
-    ORG=$(echo "$IP_DATA" | awk -F': *' 'tolower($1) ~ /orgname|organization|descr/ {print $2}' | head -n1 | xargs)
-    COUNTRY=$(echo "$IP_DATA" | awk -F': *' 'tolower($1) ~ /country/ {print $2}' | head -n1 | xargs)
+    # 1. Obtención de Raw Data
+    RAW_WHOIS=$(whois "$ip" 2>/dev/null)
+
+    # 2. PARSER DE BLOQUES (Texto -> Array de Objetos)
+    # Separamos por doble salto de línea, limpiamos y convertimos cada bloque en objeto
+    WHOIS_ARRAY=$(echo "$RAW_WHOIS" | jq -Rs '
+      split("\n\n") | 
+      map(
+        split("\n") | 
+        map(select(contains(": "))) | 
+        map(split(": ")) | 
+        map({(.[0] | gsub("^\\s+|\\s+$"; "")): (.[1:] | join(": ") | gsub("^\\s+|\\s+$"; ""))}) | 
+        add
+      ) | map(select(. != null))
+    ')
+
+# ... (después del WHOIS_ARRAY que ya tenés)
+# ---------------------------------------------------------------------------------
+    # 3. FILTRADO QUIRÚRGICO (Buscamos el bloque con 'inetnum' para el Dashboard)
+    # Esto ignora los comentarios de LACNIC (% IP Client, etc.)
+    DATA_BLOCK=$(echo "$WHOIS_ARRAY" | jq -c '.[] | select(has("inetnum"))' | head -n1)
+
+    # Si por alguna razón no hay inetnum (raro), buscamos cualquier bloque con owner o descr
+    if [[ -z "$DATA_BLOCK" || "$DATA_BLOCK" == "null" ]]; then
+        DATA_BLOCK=$(echo "$WHOIS_ARRAY" | jq -c '.[] | select(has("owner") or has("descr"))' | head -n1)
+    fi
+
+    # Extraemos las variables limpias para la "cara visible" del reporte
+    ORG=$(echo "$DATA_BLOCK" | jq -r '.owner // .orgname // .descr // "unknown"')
+    RANGE=$(echo "$DATA_BLOCK" | jq -r '.inetnum // .route // "unknown"')
+    COUNTRY=$(echo "$DATA_BLOCK" | jq -r '.country // "unknown"')
     
-    DOM_DATA=$(whois "$domain" 2>/dev/null)
-    REGISTRAR=$(echo "$DOM_DATA" | awk -F': *' 'tolower($1) ~ /registrar/ {print $2}' | head -n1 | xargs)
-    CREATED=$(echo "$DOM_DATA" | awk -F': *' 'tolower($1) ~ /creation date|created/ {print $2}' | head -n1 | xargs)
-
-    # --- 2. CAPA DIG ---
-    MX_REC=$(dig +short MX "$domain" | tr '\n' ',' | sed 's/,$//')
-    TXT_REC=$(dig +short TXT "$domain" | tr '\n' ' ' | xargs)
-    NS_REC=$(dig +short NS "$domain" | tr '\n' ',' | sed 's/,$//')
-
-    # --- 3. INYECCIÓN ---
-    jq --arg dom "$domain" \
-       --arg ip "$ip" \
-       --arg net "${NET:-unknown}" \
-       --arg org "${ORG:-unknown}" \
-       --arg count "${COUNTRY:-unknown}" \
-       --arg reg "${REGISTRAR:-unknown}" \
-       --arg cre "${CREATED:-unknown}" \
-       --arg mx "${MX_REC:-none}" \
-       --arg txt "${TXT_REC:-none}" \
-       --arg ns "${NS_REC:-none}" \
+    # 4. INYECCIÓN MAESTRA (Actualizada)
+    jq --arg dom "$domain" --arg ip "$ip" \
+       --arg org "$ORG" --arg range "$RANGE" --arg count "$COUNTRY" \
+       --argjson full "$WHOIS_ARRAY" \
        '.[$dom] = {
            "ip": $ip,
-           "whois": {
-               "ip_info": { "netname": $net, "org": $org, "country": $count },
-               "domain_info": { "registrar": $reg, "created": $cre }
+           "infra": { 
+               "provider": "Self-Hosted", 
+               "owner": $org, 
+               "range": $range, 
+               "country": $count 
            },
-           "dns_records": { "mx": $mx, "ns": $ns, "txt": $txt }
+           "full_whois": $full,
+           "status": "exposed"
        }' "$OUTPUT_FILE" > "$OUTPUT_FILE.tmp" && mv "$OUTPUT_FILE.tmp" "$OUTPUT_FILE"
 
-    WAIT=$(( ( RANDOM % 3 ) + 2 )) # Bajé un poco el delay para que no sea eterno
-    echo -e "    ${YELLOW}waiting ${WAIT}s...${NC}"
+
+    WAIT=$(( ( RANDOM % 2 ) + 2 ))
     sleep $WAIT
 done
 
-log_success "Intel consolidado (Whois + DNS) en: $OUTPUT_FILE"
+log_success "Intel consolidado en: $OUTPUT_FILE"
