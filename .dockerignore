@@ -1,0 +1,5 @@
+# .dockerignore
+.git
+results/
+node_modules/
+*.log

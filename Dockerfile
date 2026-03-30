@@ -1,23 +1,20 @@
-FROM kalilinux/kali-rolling
+FROM kalilinux/kali-last-release
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y \
-    curl \
-    jq \
-    nmap \
-    whois \
-    whatweb \
-    exploitdb \
-    dnsx \
-    sed \
-    awk \
-    httpx-toolkit \
-    dnsutils \
-    subfinder \
-    assetfinder \
-    bash \
-    && rm -rf /var/lib/apt/lists/*
+RUN echo "deb http://http.kali.org/kali kali-rolling main contrib non-free non-free-firmware" > /etc/apt/sources.list
+
+RUN apt-get update && apt-get upgrade -y
+
+RUN apt-get install -y \
+    curl jq bash sed gawk dnsutils whois \
+    nmap whatweb exploitdb golang
+
+ENV PATH="/root/go/bin:${PATH}"
+
+RUN go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest && \
+    go install github.com/projectdiscovery/httpx/cmd/httpx@latest && \
+    go install github.com/projectdiscovery/dnsx/cmd/dnsx@latest
 
 WORKDIR /app
 
