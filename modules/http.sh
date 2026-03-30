@@ -19,7 +19,6 @@ if [[ -z "$TARGET" ]]; then
 fi
 
 # 1. Preparación del entorno (Cimiento sólido)
-mkdir -p "$OP_DIR"
 if [ ! -f "$OUTPUT" ] || [ ! -s "$OUTPUT" ]; then
     echo "{}" > "$OUTPUT"
 fi
