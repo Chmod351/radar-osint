@@ -205,6 +205,86 @@ export async function enrichWithASN(resolvedDomains: {host: string, ip: string}[
 }
 
 
+
+
+
+////////////////////////////////////////////////////////////////
+//
+//
+//
+//  http phase separar luego 
+//
+const USER_AGENTS = [
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/120.0",
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Mobile/15E148 Safari/604.1"
+];
+
+const getRandomAgent = () => USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
+
+async function analyzeHeaders(url: string) {
+  try {
+    // Aseguramos que el agente sea un string y no undefined
+    const agent = getRandomAgent() || USER_AGENTS[0]; 
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: { 
+        "User-Agent": agent // Ahora TS sabe que es string
+      } as Record<string, string>, // Forzamos el tipo para evitar el error de overload
+      redirect: "follow",
+    });
+
+    const headers = Object.fromEntries(response.headers.entries());
+
+    return {
+      protocol: new URL(url).protocol,
+      status: response.status,
+      security: {
+        hsts: !!headers["strict-transport-security"],
+        csp: !!headers["content-security-policy"],
+        xfo: !!headers["x-frame-options"],
+        nosniff: !!headers["x-content-type-options"],
+      },
+      server: headers["server"] || "Unknown",
+      poweredBy: headers["x-powered-by"] || "N/A",
+      cookies: response.headers.get("set-cookie") ? "Present" : "None"
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
+async function runHttpPhase(previousData: any[]) {
+  console.log(`[⚡] Iniciando Fase HTTP para ${previousData.length} dominios...`);
+  
+  const results = [];
+
+  for (const item of previousData) {
+    await Bun.sleep(Math.random()*6000)
+    console.log(`[+] Analizando: ${item.url}`);
+    
+    const httpData = await analyzeHeaders(item.url);
+    
+    // Fusionamos la data anterior con la nueva
+    const enrichedItem = {
+      ...item,
+      http_intel: httpData || { error: "Unreachable" }
+    };
+
+    results.push(enrichedItem);
+
+    // PERSISTENCIA: Guardamos "en caliente"
+    // Así, si se corta, el JSON tiene el progreso actual.
+    await Bun.write(`${OP_DIR}/lowNoice.json`, JSON.stringify(results, null, 2));
+  }
+
+  return results;
+}
+
+
+
 /* ========================= */
 /* 6. ORQUESTADOR */
 /* ========================= */
@@ -226,11 +306,9 @@ async function main(target: string) {
 
     // 5. Metadata Detallada (Títulos, Servers, etc.)
     const metadata = await getMetadata(httpUrls);
-
+   
     // 6. FUSIÓN FINAL: Armamos el reporte cruzando todo en memoria
-    const finalReport = domainsWithASN.map(domain => {
-      // Buscamos en el array de metadata si este host tiene datos web
-      // httpx-toolkit en JSON devuelve la propiedad 'input' o 'url'
+ const preReport = domainsWithASN.map(domain => {
       const webData = metadata.find(m => 
         m.input === domain.host || 
         m.url?.includes(domain.host)
@@ -239,8 +317,8 @@ async function main(target: string) {
       return {
         host: domain.host,
         ip: domain.ip,
-        asn: domain.asn, 
-        country: domain.country, 
+        asn: domain.asn,
+        country: domain.country,
         prefix: domain.prefix,
         url: webData?.url || `http://${domain.host}`,
         status_code: webData?.status_code || 0,
@@ -249,16 +327,32 @@ async function main(target: string) {
         cdn: webData?.webserver?.toLowerCase().includes("cloudflare") ? "cloudflare" : "none"
       };
     });
+ // 7. FASE HTTP (Medium Noise): Esta fase toma el preReport y lo enriquece UNO A UNO
+    // Le pasamos el preReport como argumento
+    const finalReport = await runHttpPhase(preReport);
 
-    // 7. RESULTADO FINAL
+    const tableFriendlyReport = finalReport.map(item => ({
+      host: item.host,
+      ip: item.ip,
+      status: item.http_intel?.status || "ERR",
+        // Aplanamos lo que realmente importa
+      HSTS: item.http_intel?.security?.hsts ? "✅" : "❌",
+     CSP: item.http_intel?.security?.csp ? "✅" : "❌",
+     XFO: item.http_intel?.security?.xfo ? "✅" : "❌",
+     server: item.webserver,
+     cdn: item.cdn
+}));
+
+    // 8. RESULTADO FINAL
     console.log(`\n[🏁] REPORTE FINAL GENERADO: ${finalReport.length} entradas.`);
-    console.table(finalReport.slice(0, 10)); // Mostramos los primeros 10 para debuggear
-    const lownoisePhaseDone=await Bun.write(`${OP_DIR}/lowNoice.json`, JSON.stringify(finalReport, null, 2));
-return lownoisePhaseDone
+    console.table(tableFriendlyReport.slice(0, 15));
+    
+    // El Bun.write ya se hizo dentro de runHttpPhase, pero lo hacemos una vez más para asegurar
+    await Bun.write(`${OP_DIR}/lowNoice.json`, JSON.stringify(finalReport, null, 2));
+
   } catch (e) {
-    console.error("[!] Error crítico en el orquestador de lowNoice", e);
+    console.error("[!] Error crítico en el orquestador de lowNoise", e);
   }
 }
-
 
 main(TARGET)
