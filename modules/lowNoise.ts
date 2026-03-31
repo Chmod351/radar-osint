@@ -1,5 +1,6 @@
 import {execa} from "execa"
 import { resolveTxt } from "node:dns/promises";
+import {classifyTarget}from "./mediumNoise.ts"
 
 const RESULTS_BASE = process.env.RESULTS_BASE || "./results";
 const TARGET = Bun.argv[2]; // Esto reemplaza al TARGET="$1"
@@ -306,46 +307,77 @@ async function main(target: string) {
 
     // 5. Metadata Detallada (Títulos, Servers, etc.)
     const metadata = await getMetadata(httpUrls);
-   
-    // 6. FUSIÓN FINAL: Armamos el reporte cruzando todo en memoria
- const preReport = domainsWithASN.map(domain => {
-      const webData = metadata.find(m => 
-        m.input === domain.host || 
-        m.url?.includes(domain.host)
-      );
 
-      return {
-        host: domain.host,
-        ip: domain.ip,
-        asn: domain.asn,
-        country: domain.country,
-        prefix: domain.prefix,
-        url: webData?.url || `http://${domain.host}`,
-        status_code: webData?.status_code || 0,
-        title: webData?.title || "N/A",
-        webserver: webData?.webserver || "N/A",
-        cdn: webData?.webserver?.toLowerCase().includes("cloudflare") ? "cloudflare" : "none"
-      };
+    // 6. CLASIFICACIÓN Y FUSIÓN
+    // Primero armamos el preReport
+    const preReport = domainsWithASN.map(domain => {
+        const webData = metadata.find(m => 
+            m.input === domain.host || 
+            m.url?.includes(domain.host)
+        );
+
+        // Armamos el objeto base
+        const baseData = {
+            host: domain.host,
+            ip: domain.ip,
+            asn: domain.asn,
+            asn_owner: domain.prefix, // Cymru suele poner el nombre en el campo prefix o similar
+            country: domain.country,
+            url: webData?.url || `http://${domain.host}`,
+            status_code: webData?.status_code || 0,
+            title: webData?.title || "N/A",
+            webserver: webData?.webserver || "N/A",
+            cdn: webData?.webserver?.toLowerCase().includes("cloudflare") ? "cloudflare" : "none"
+        };
+
+        // 7. Aplicamos la clasificación AQUÍ
+        return classifyTarget(baseData);
     });
- // 7. FASE HTTP (Medium Noise): Esta fase toma el preReport y lo enriquece UNO A UNO
-    // Le pasamos el preReport como argumento
+
+    // 8. FASE HTTP (Solo a los que están vivos)
     const finalReport = await runHttpPhase(preReport);
+console.log(finalReport)
+    // 9. REPORTE VISUAL (Con la nueva info de prioridad)
+ const tableFriendlyReport = finalReport.map(item => {
+    const intel = item.http_intel || {};
+    const sec = intel.security || {};
+    
+    // 1. Prioridad: ¿Es realmente HIGH? 
+    // Si tiene un server viejo (2.4.6/7) o es un punto de entrada (svn, mail, chat), es HIGH.
+    // Si es un 301 genérico a www, podría ser LOW.
+    const criticalKeywords = [
+        'svn', 'git', 'api', 'dev', 'stg', 'test', 'mail', 
+        'vpn', 'admin', 'db', 'ssh', 'backup', 'internal'
+    ];
+    const hasCriticalName = criticalKeywords.some(key => item.host.includes(key));
+    const isLive = item.status_code === 200;
+   // Un HIGH real es: o está vivo (200), o es un servicio crítico (mail, svn, etc)
+    const isCritical = isLive || hasCriticalName;
 
-    const tableFriendlyReport = finalReport.map(item => ({
-      host: item.host,
-      ip: item.ip,
-      status: item.http_intel?.status || "ERR",
-        // Aplanamos lo que realmente importa
-      HSTS: item.http_intel?.security?.hsts ? "✅" : "❌",
-     CSP: item.http_intel?.security?.csp ? "✅" : "❌",
-     XFO: item.http_intel?.security?.xfo ? "✅" : "❌",
-     server: item.webserver,
-     cdn: item.cdn
-}));
+    const priorityLabel = isCritical ? "🔴 HIGH" : "⚪ LOW";
 
-    // 8. RESULTADO FINAL
-    console.log(`\n[🏁] REPORTE FINAL GENERADO: ${finalReport.length} entradas.`);
-    console.table(tableFriendlyReport.slice(0, 15));
+    // 2. Server: Buscamos el dato más completo. 
+    // Priorizamos 'webserver' (trae el OS) sobre 'intel.server' (más genérico).
+    const serverInfo = item.webserver && item.webserver !== "N/A" 
+        ? item.webserver 
+        : (intel.server || "???");
+
+    // 3. Formateo de Seguridad: Símbolos puros.
+    const formatSec = (val: any) => {
+        if (intel.error === "Unreachable") return "--"; // Doble guion para lectura rápida
+        return val ? "✔️" : "❌";
+    };
+
+    return {
+        host: item.host.padEnd(25),
+        priority: priorityLabel,
+        status: item.status_code || "ERR",
+        HSTS: formatSec(sec.hsts),
+        CSP: formatSec(sec.csp),
+        server: serverInfo
+    };
+});    console.log(`\n[🏁] REPORTE FINAL GENERADO: ${finalReport.length} entradas.`);
+    console.table(tableFriendlyReport.slice(0, 20));
     
     // El Bun.write ya se hizo dentro de runHttpPhase, pero lo hacemos una vez más para asegurar
     await Bun.write(`${OP_DIR}/lowNoice.json`, JSON.stringify(finalReport, null, 2));
