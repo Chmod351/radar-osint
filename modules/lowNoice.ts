@@ -165,7 +165,7 @@ return stdout.split("\n")
 }
 
 
-async function getASN(ip: string): Promise<string> {
+async function getASN(ip: string): Promise<{asn:string,prefix:string,country:string}> {
   const revIp = ip.split('.').reverse().join('.');
   const query = `${revIp}.origin.asn.cymru.com`;
 
@@ -173,22 +173,32 @@ async function getASN(ip: string): Promise<string> {
     const records = await resolveTxt(query); // Función directa
     const firstEntry=records?.[0]?.[0];
   if (firstEntry) {
-      const rawAsn = firstEntry.split('|');
-      return rawAsn[0]?.trim() || "0";
+    const parts = firstEntry.split('|').map(p => p.trim());
+ return {
+        asn: parts[0] ? `AS${parts[0]}` : "AS_UNKNOWN",
+        prefix: parts[1] || "Unknown",
+        country: parts[2] || "Unknown"
+      };
     }
-    
-    return "0";  } catch {
-    return "0";
+  } catch(e) {
+    console.log(e)
+    return {
+ asn: "AS_UNKNOWN", prefix: "Unknown", country: "Unknown" 
+    }
   }
+
+return { asn: "AS_UNKNOWN", prefix: "Unknown", country: "Unknown" };
 }
+
+
 
 export async function enrichWithASN(resolvedDomains: {host: string, ip: string}[]) {
   console.log(`[+] Consultando ASN para ${resolvedDomains.length} IPs...`);
 
-  // Ejecutamos las consultas en paralelo
   const enriched = await Promise.all(resolvedDomains.map(async (item) => {
-    const asn = await getASN(item.ip);
-    return { ...item, asn };
+    const intel = await getASN(item.ip); 
+    // Usamos ...intel para que las propiedades salgan del objeto y entren a 'item'
+    return { ...item, ...intel }; 
   }));
 
   return enriched;
@@ -206,6 +216,7 @@ async function main(target: string) {
     
     // 2. Resolución DNS (Acá obtenemos las IPs)
     const domainsResolved = await domainResolver(allDomains);
+    
     
     // 3. Enriquecimiento con ASN (Usamos las IPs de domainsResolved)
     const domainsWithASN = await enrichWithASN(domainsResolved);
@@ -228,7 +239,9 @@ async function main(target: string) {
       return {
         host: domain.host,
         ip: domain.ip,
-        asn: domain.asn, // Ya viene de enrichWithASN
+        asn: domain.asn, 
+        country: domain.country, 
+        prefix: domain.prefix,
         url: webData?.url || `http://${domain.host}`,
         status_code: webData?.status_code || 0,
         title: webData?.title || "N/A",
@@ -248,3 +261,4 @@ return lownoisePhaseDone
 }
 
 
+main(TARGET)
