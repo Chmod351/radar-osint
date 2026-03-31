@@ -7,7 +7,7 @@ source "$(dirname "$0")/../env.sh"
 
 TARGET="${1:-}"
 OP_DIR="$RESULTS_BASE/$TARGET"
-INPUT_JSON="$OP_DIR/lowNoice.json"
+INPUT_JSON="$OP_DIR/intel.json"
 OUTPUT_WEB="$OP_DIR/web_intel.json"
 
 # === VALIDACIONES ===
@@ -31,9 +31,9 @@ echo "{}" > "$OUTPUT_WEB"
 
 # === EXTRAER HOSTS WEB ===
 mapfile -t DOMAINS < <(
-jq -r ".\"$TARGET\".subdomains[]
-| select(.ports and any(.ports[]?.port; . == 80 or . == 443 or . == 8080 or . == 8443))
-| .host" "$INPUT_JSON" | sort -u
+jq -r "to_entries[] 
+| select(.value.ports and any(.value.ports[]?.port; . == 80 or . == 443 or . == 8080 or . == 8443)) 
+| .key" "$INPUT_JSON" | sort -u
 )
 
 if [[ ${#DOMAINS[@]} -eq 0 ]]; then
