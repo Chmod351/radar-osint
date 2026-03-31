@@ -28,8 +28,10 @@ bash "$MODULES_DIR/whois.sh" "$TARGET"
 
 echo "[FASE 3] Correlacion..."
 bash "$MODULES_DIR/intel.sh" "$TARGET" 
-
+echo "[FASE 3.5] Analisis de Headers..."
+bash "$MODULES_DIR/http.sh" "$TARGET" 
 echo "[FASE 4] Intervención manual requerida"
+
 
 echo "[+] Targets EXPUESTOS detectados (sin CDN):"
 EXPOSED_LIST=$(jq -r ".\"$TARGET\".subdomains[] | select(.status == \"exposed\") | .host" "$RESULTS_BASE/$TARGET/lowNoice.json")
@@ -64,10 +66,7 @@ HOST=$(echo "$SELECTED_URL" | sed 's|http[s]*://||; s|/||g')
 echo -e "\n[+] Objetivo en la mira: \e[1;32m$HOST\e[0m"
 echo "[FASE 6] Identificando Tecnologías Web en $HOST..."
 # Corremos WhatWeb antes de Nmap para saber a qué nos enfrentamos
-bash "$MODULES_DIR/web_discovery.sh" "$HOST"
 
-echo ""
-echo "[!] Tecnologías detectadas podrían influir en el tipo de escaneo."
 read -p "¿Ejecutar Nmap sobre $HOST? (y/n): " CONFIRM
 
 if [[ "$CONFIRM" == "y" ]]; then
@@ -78,6 +77,9 @@ else
     echo "[INFO] Nmap cancelado."
 fi
 
+bash "$MODULES_DIR/web_discovery.sh" "$HOST"
+
+echo ""
 echo "[+] Generando reporte maestro final..."
 bash "$PROCESSORS_DIR/merger.sh" "$TARGET"
 
