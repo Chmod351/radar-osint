@@ -7,6 +7,7 @@ OP_DIR="$RESULTS_BASE/$TARGET"
 LOW_NOISE="$OP_DIR/lowNoice.json"
 WHOIS="$OP_DIR/whois_ips.json"
 INTEL="$OP_DIR/intel.json"
+HTTP_JSON="$OP_DIR/http.json"
 
 # Archivo de salida (El Objeto Maestro)
 OUTPUT_MAESTRO="$OP_DIR/MASTER_REPORT.json"
@@ -24,11 +25,12 @@ fi
 jq --arg target "$TARGET" \
    --argjson whois "$(cat "$WHOIS" 2>/dev/null || echo '{}')" \
    --argjson intel "$(cat "$INTEL" 2>/dev/null || echo '{}')" \
+   --argjson http "$(cat "$HTTP_JSON" 2>/dev/null || echo '{}')" \
    '
    .[$target].subdomains |= map(
      .host as $h | 
      # Usamos * para que los datos se fusionen recursivamente
-     . * ($intel[$h] // {}) * ($whois[$h] // {})
+     . * ($intel[$h] // {}) * ($whois[$h] // {}) * ($http[$h] // {})
    )
 ' "$LOW_NOISE" > "$OUTPUT_MAESTRO"
 
