@@ -21,12 +21,12 @@ if [ ! -f "$OUTPUT" ]; then
 fi
 
 
-log_info "[+] Escaneando con Nmap (sudo requerido)..."
+# log_info "[+] Escaneando con Nmap (sudo requerido)..."
 # Ejecutamos Nmap. El output XML irá a la carpeta de la OP.
-sudo nmap -sS -sV --top-ports 1000 --open -Pn  "$TARGET" -oX "$TMP_XML" > /dev/null
+nmap -sS -sV --top-ports 1000 --open -Pn  "$TARGET" -oX "$TMP_XML" > /dev/null
 
 # TRUCO DE OPERADOR: Cambiamos el dueño del XML para que nuestro usuario pueda leerlo
-sudo chown $USER:$USER "$TMP_XML"
+chown $USER:$USER "$TMP_XML"
 
 echo "[+] Extrayendo servicios del XML..."
 
@@ -56,11 +56,17 @@ END { print "]}" }')
 
 echo "[+] Inyectando en $OUTPUT..."
 
-# Inyectar usando JQ de forma segura
-# Nota: Ajustamos el filtro para que busque dentro del array directamente
+# Aseguramos que el JSON de puertos no venga vacío
+if [[ "$PORTS_JSON" == "{\"ports\": []}" ]]; then
+    log_error "[-] Nmap no encontró puertos abiertos."
+    exit 0
+fi
+
+# Inyección Atómica: Forzamos la estructura
+# Esto asegura que entre en la llave del target sí o sí
 jq --arg target "$TARGET" \
-   --argjson ports "$PORTS_JSON" \
-   '.[$target].ports = $ports.ports' \
+   --argjson p "$PORTS_JSON" \
+   '.[$target] += { "ports": $p.ports }' \
    "$OUTPUT" > "$OUTPUT.tmp" && mv "$OUTPUT.tmp" "$OUTPUT"
 # Opcional: Limpiar el XML pesado pero dejar el JSON sagrado
 rm "$TMP_XML"
