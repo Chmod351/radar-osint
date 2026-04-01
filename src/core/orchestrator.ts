@@ -4,11 +4,10 @@ import { httpPhase } from "../phases/03-http";
 import { analysisPhase } from "../phases/04-analysis";
 import {dashboard}from "../ui/dashboard.ts"
 import { dataSaver,TARGET}from "../shared/utils.ts"
+import {normalizeTarget}from "../shared/urlNormalizer.ts"
 
-if(!TARGET){
-console.log("lkajsdlka")
-}
 
+ 
 async function runRadar(target: string) {
   try{
   // Fase 1: ¿Qué hay afuera?
@@ -30,4 +29,6 @@ async function runRadar(target: string) {
   }
 }
 
-runRadar(TARGET)
+if (TARGET){
+runRadar(normalizeTarget(TARGET))
+}
