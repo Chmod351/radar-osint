@@ -1,6 +1,7 @@
 import {execa} from "execa"
 import { resolveTxt } from "node:dns/promises";
-import {classifyTarget}from "./mediumNoise.ts"
+import {classifyTarget ,parseWhatWeb}from "./mediumNoise.ts"
+
 
 const RESULTS_BASE = process.env.RESULTS_BASE || "./results";
 const TARGET = Bun.argv[2]; // Esto reemplaza al TARGET="$1"
@@ -364,7 +365,7 @@ console.log(finalReport)
 
     // 3. Formateo de Seguridad: Símbolos puros.
     const formatSec = (val: any) => {
-        if (intel.error === "Unreachable") return "--"; // Doble guion para lectura rápida
+        if (intel.error === "Unreachable") return "--"; 
         return val ? "✔️" : "❌";
     };
 
