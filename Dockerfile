@@ -3,11 +3,20 @@ FROM kalilinux/kali-last-release
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Repositorios y actualizaciones
-RUN echo "deb http://http.kali.org/kali kali-rolling main contrib non-free non-free-firmware" > /etc/apt/sources.list
 RUN apt-get update && apt-get upgrade -y && apt-get install -y \
-    bash curl jq dnsutils nmap whatweb ruby-full build-essential \
-    subfinder httpx-toolkit dnsx assetfinder \
-    && gem install resolv-replace \
+    bash \
+    curl \
+    jq \
+    dnsutils \
+    nmap \
+    whatweb \
+    exploitdb \    
+    ruby-full \
+    build-essential \
+    subfinder \
+    httpx-toolkit \
+    dnsx \
+    assetfinder \
     && rm -rf /var/lib/apt/lists/*
 
 # --- INSTALACIÓN DE BUN ---
@@ -15,12 +24,13 @@ RUN curl -fsSL https://bun.sh/install | bash
 ENV PATH="/root/.bun/bin:${PATH}"
 
 WORKDIR /app
-COPY . .
 
-# Instalamos las dependencias de tu proyecto (execa, etc.)
+COPY package.json bun.lockb* ./
 RUN bun install
 
-RUN find . -name "*.sh" -exec chmod +x {} +
-USER root
+COPY . .
+
+RUN chmod +x ./modules/lowNoise.ts
+
 ENTRYPOINT ["/bin/bash", "-c"]
 CMD ["./recon.sh"]
