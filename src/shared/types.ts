@@ -2,6 +2,15 @@ export interface Technology {
   name: string;
   version: string;
 }
+export interface WhoisIntel {
+  registrar?: string;
+  creationDate?: string;
+  expirationDate?: string;
+  nameServers: string[];
+  status: string[];
+  emails?: string;
+  raw?: string; 
+}
 
 export interface SecurityHeaders {
   hsts: boolean;
@@ -35,7 +44,6 @@ export interface AnalyzedTarget {
   webserver: string;
   cdn: string;
   infra_type: "Cloud/CDN" | "P/Self-H";
-  
   // Inteligencia y Análisis
   priority: "HIGH" | "LOW";
   action: "SCAN_READY" | "SKIP_DEEP";
@@ -46,7 +54,13 @@ export interface AnalyzedTarget {
   
   // Datos de Fase 4
   vulnerabilities?: SearchSploitResult[]
+
+  whois?: WhoisIntel;
+  whois_raw?: any;
 }
+
+
+
 
 export interface SearchSploitResult {
   Title: string;
