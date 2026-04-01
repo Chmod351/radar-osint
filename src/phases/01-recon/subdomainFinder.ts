@@ -7,7 +7,6 @@ import {subfinder,assetfinder} from "../../shared/utils.ts"
 async function runSubdomainFinderThroughApi(target: string) {
   try {
     const { stdout } = await execa(subfinder, ["-d", target, "-silent"]);
-    console.log(subfinder, " completado")
     return stdout.split("\n").filter(Boolean)
   } catch (e) {
     console.log(e)
@@ -17,7 +16,6 @@ async function runSubdomainFinderThroughApi(target: string) {
 async function runSubdomainFinderThroughCertificates(target: string) {
   try {
     const { stdout } = await execa(assetfinder, ["--subs-only", target])
-    console.log(assetfinder, " completado")
     return stdout.split("\n").filter(Boolean)
   } catch (e) {
     console.log(e)

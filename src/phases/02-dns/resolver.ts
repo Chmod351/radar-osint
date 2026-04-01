@@ -1,4 +1,6 @@
 import { execa } from "execa"
+import type { AnalyzedTarget } from "../../shared/types";
+
 interface HttpCheck {
   host: string,
   ip: string
@@ -29,7 +31,6 @@ export async function domainResolver(subdomains: string[]) {
         ip: data.a?.[0] || "0.0.0.0", // tomamos la primer ipv4
       }
     })
-    console.log(`[✓] ${resolved.length} dominios resolvieron correctamente.`);
     return resolved;
   } catch (e) {
     console.log(e)
@@ -41,7 +42,6 @@ export async function domainResolver(subdomains: string[]) {
 
 
 export async function httpCheck(resolvedDomains: HttpCheck[]) {
-  console.log(`[+] Lanzando HTTP Check (Fase 3) para ${resolvedDomains.length} dominios...`);
 
   const hostList = resolvedDomains.map(d => d.host).join("\n");
 
@@ -103,7 +103,7 @@ export async function getMetadata(httpDomainsValidated: string[]) {
   }
 }
 
-export function classifyTarget(domainData: any) {
+export function classifyTarget(domainData: AnalyzedTarget) {
   const cloudKeywords = [
     "amazon", "google", "microsoft", "cloudflare", "akamai",
     "fastly", "ovh", "digitalocean", "linode", "vercel", "github"

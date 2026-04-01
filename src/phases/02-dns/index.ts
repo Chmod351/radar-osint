@@ -4,7 +4,7 @@ import {enrichWithASN} from './ansLookup.ts'
 
 
 export async function dnsPhase(allDomains:string[]){
-
+console.log("iniciando fase dns")
     const domainsResolved = await domainResolver(allDomains);
     // 3. Enriquecimiento con ASN (Usamos las IPs de domainsResolved)
     const domainsWithASN = await enrichWithASN(domainsResolved);
@@ -40,5 +40,8 @@ export async function dnsPhase(allDomains:string[]){
       // 7. Aplicamos la clasificación AQUÍ
       return classifyTarget(baseData);
     });
+
+    console.log(preReport)
+    console.log("--FASE 2 TERMINADA")
   return preReport
 }
