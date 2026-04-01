@@ -104,22 +104,26 @@ private parsePlugins(plugins: any): Technology[] {
 
 
 
-
-
-
-
-
 // --- Lógica de ejecución ---
 const scanner = new WhatWebService();
-console.log(scanner,"armando la clase de whatweb")
+
 const target = process.argv[2] || "scanme.nmap.org";
 
 console.log(`[*] [Execa Mode] Analizando: ${target}...`);
 
-const techStack = await scanner.scan(target);
-console.log(techStack,"....................... techstack")
-if (techStack.length > 0) {
-    console.table(techStack);
-} else {
-    console.log(`[-] No se detectaron tecnologías adicionales en ${target}.`);
+export async function getTechStack(target:string){
+  if(!target){
+     console.log("No se detecto un target")
+  }
+  try{
+       const techStack = await scanner.scan(target);
+       console.log(techStack,"....................... techstack")
+       if (techStack.length > 0) {
+         return techStack
+        } else {
+          console.log(`[-] No se detectaron tecnologías adicionales en ${target}.`);
+        }
+  }catch(e){
+    console.log("fallo whatweb",e)
+  }
 }

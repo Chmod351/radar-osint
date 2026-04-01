@@ -1,6 +1,6 @@
 import {execa} from "execa"
 import { resolveTxt } from "node:dns/promises";
-import {classifyTarget ,parseWhatWeb}from "./mediumNoise.ts"
+import {classifyTarget ,getTechStack, type Technology}from "./mediumNoise.ts"
 
 
 const RESULTS_BASE = process.env.RESULTS_BASE || "./results";
@@ -268,11 +268,18 @@ async function runHttpPhase(previousData: any[]) {
     console.log(`[+] Analizando: ${item.url}`);
     
     const httpData = await analyzeHeaders(item.url);
-    
-    // Fusionamos la data anterior con la nueva
+    //
+    // -------------------------- tech data phase--------------------------
+    //
+    let techStack:Technology[]=[];
+    if(item.status_code===200 || (httpData && httpData.status===200)){
+    const techData = await getTechStack(item.url)
+      techData? techStack=techData: []
+    }
     const enrichedItem = {
       ...item,
-      http_intel: httpData || { error: "Unreachable" }
+      http_intel: httpData || { error: "Unreachable" },
+      http_stack:techStack
     };
 
     results.push(enrichedItem);
@@ -341,8 +348,10 @@ console.log(finalReport)
     // 9. REPORTE VISUAL (Con la nueva info de prioridad)
  const tableFriendlyReport = finalReport.map(item => {
     const intel = item.http_intel || {};
+    const stack = item.http_stack || {};
     const sec = intel.security || {};
-    
+    const realStatus = item.http_intel.status || item.status || "ERR"
+    console.log(realStatus)
     // 1. Prioridad: ¿Es realmente HIGH? 
     // Si tiene un server viejo (2.4.6/7) o es un punto de entrada (svn, mail, chat), es HIGH.
     // Si es un 301 genérico a www, podría ser LOW.
@@ -368,16 +377,21 @@ console.log(finalReport)
         if (intel.error === "Unreachable") return "--"; 
         return val ? "✔️" : "❌";
     };
+// 4. Formateo de Tecnologías (Resumen)
+    // Mostramos solo los nombres para que la tabla no se ensanche infinito
+    // Ej: "Apache, Google-Analytics"
+    const techSummary = stack.length > 0 
+        ? stack.map((t: Technology) => t.name).join(", ").slice(0, 30) 
+        : "--";
 
     return {
         host: item.host.padEnd(25),
         priority: priorityLabel,
-        status: item.status_code || "ERR",
+        status: realStatus? realStatus:"ERR",
         HSTS: formatSec(sec.hsts),
-        CSP: formatSec(sec.csp),
-        server: serverInfo
-    };
-});    console.log(`\n[🏁] REPORTE FINAL GENERADO: ${finalReport.length} entradas.`);
+        server: serverInfo.slice(0, 20), // Recortamos para que entre en la terminal
+        tech: techSummary ,
+    };});    console.log(`\n[🏁] REPORTE FINAL GENERADO: ${finalReport.length} entradas.`);
     console.table(tableFriendlyReport.slice(0, 20));
     
     // El Bun.write ya se hizo dentro de runHttpPhase, pero lo hacemos una vez más para asegurar
