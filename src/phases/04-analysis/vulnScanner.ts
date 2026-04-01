@@ -88,16 +88,30 @@ if (item.status_code === "ERR" || isUnknown) {
 return vulnAlert
 }
 
-export async function httpPhaseAndVulnerabilityPhaseMerger(enrichedItem:AnalyzedTarget):Promise<AnalyzedTarget>{
-    let exploits: SearchSploitResult[] | [] = []
+export async function httpPhaseAndVulnerabilityPhaseMerger(enrichedItem: AnalyzedTarget): Promise<AnalyzedTarget> {
+    let allExploits: SearchSploitResult[] = [];
+
+    // 1. Buscamos por el Servidor principal (Apache, Nginx, etc.)
     if (enrichedItem.webserver !== "N/A") {
-      exploits = await findExploits(enrichedItem.webserver)
-
+        const serverExploits = await findExploits(enrichedItem.webserver);
+        allExploits = [...allExploits, ...serverExploits];
     }
-    const finalItem:AnalyzedTarget = {
-      ...enrichedItem,
-      vulnerabilities: exploits
-    };
-    return finalItem
-  }
 
+    // 2. BUSQUEDA POR STACK (Lo que WhatWeb encontró: WordPress, JQuery, etc.)
+    if (enrichedItem.http_stack && enrichedItem.http_stack.length > 0) {
+        for (const tech of enrichedItem.http_stack) {
+            // No buscamos cosas genéricas como "UncommonHeaders"
+            if (["WordPress", "PHP", "JQuery"].includes(tech.name)) {
+                const techQuery = `${tech.name} ${tech.version !== "unknown" ? tech.version : ""}`;
+                console.log(`[📡] Radar buscando Tech Stack: "${techQuery}"`);
+                const techExploits = await findExploits(techQuery);
+                allExploits = [...allExploits, ...techExploits];
+            }
+        }
+    }
+
+    return {
+        ...enrichedItem, // Mantiene WHOIS, ASN y todo lo anterior
+        vulnerabilities: allExploits
+    };
+}
