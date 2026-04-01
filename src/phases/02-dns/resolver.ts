@@ -103,7 +103,18 @@ export async function getMetadata(httpDomainsValidated: string[]) {
   }
 }
 
-export function classifyTarget(domainData: AnalyzedTarget) {
+export function classifyTarget(domainData: {
+host: string;
+  ip: string;
+  asn: string;
+  asn_owner: string;
+  country: string;
+  url: any;
+  status_code: any;
+  title: any;
+  webserver: any;
+  cdn: string;
+}) {
   const cloudKeywords = [
     "amazon", "google", "microsoft", "cloudflare", "akamai",
     "fastly", "ovh", "digitalocean", "linode", "vercel", "github"
