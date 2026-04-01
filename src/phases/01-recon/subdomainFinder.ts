@@ -1,10 +1,5 @@
 import { execa } from "execa"
-
-
-const subfinder = "subfinder"
-const assetfinder = "assetfinder"
-
-
+import {subfinder,assetfinder} from "../../shared/utils.ts"
 /*  ========================= */
 /* 1. buscamos subdominios */
 /* ========================= */
