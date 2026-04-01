@@ -113,6 +113,7 @@ host: string;
   status_code: any;
   title: any;
   webserver: any;
+  whois?:any;
   cdn: string;
 }) {
   const cloudKeywords = [
@@ -128,6 +129,8 @@ host: string;
     ...domainData,
     priority: isCloud ? "LOW" : "HIGH",
     infra_type: isCloud ? "Cloud/CDN" : "P/Self-H",
-    action: isCloud ? "SKIP_DEEP" : "SCAN_READY"
+    action: isCloud ? "SKIP_DEEP" : "SCAN_READY",
+    whois:undefined,
+    vulnerabilities:[],
   };
 }
