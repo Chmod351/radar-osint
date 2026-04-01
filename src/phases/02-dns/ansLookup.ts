@@ -4,7 +4,7 @@ import { resolveTxt } from "node:dns/promises";
 /* 2.2. IDENTIFICAR TECNOLOGIAS */
 /* ========================= */
 
-async function getASN(ip: string): Promise<{ asn: string, prefix: string, country: string }> {
+ async function getASN(ip: string): Promise<{ asn: string, prefix: string, country: string }> {
   const revIp = ip.split('.').reverse().join('.');
   const query = `${revIp}.origin.asn.cymru.com`;
 

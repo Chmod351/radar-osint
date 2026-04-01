@@ -1,4 +1,4 @@
-import { execa } from "execa"
+
 import { resolveTxt } from "node:dns/promises";
 import { classifyTarget, getTechStack, type Technology } from "./mediumNoise.ts"
 import { findExploits,exploitController } from "../processors/vulnerabilitySearch.ts";
@@ -7,154 +7,11 @@ const RESULTS_BASE = process.env.RESULTS_BASE || "./results";
 const TARGET = Bun.argv[2]; // Esto reemplaza al TARGET="$1"
 const OP_DIR = `${RESULTS_BASE}/${TARGET}`
 
-interface HttpCheck {
-  host: string,
-  ip: string
-}
-
 
 
 if (!TARGET) {
   console.error("[-] Uso: bun src/index.ts <dominio>");
   process.exit(1);
-}
-
-/*  ========================= */
-/* 2. Resolvemos los subdominios */
-/* ========================= */
-
-// resuelve los subdominios y los filtra
-async function domainResolver(subdomains: string[]) {
-  try {
-    const { stdout } = await execa("dnsx", [
-      "-json",
-      "-silent",
-      "-nc",
-      "-a",
-      "-resp"
-    ], {
-      input: subdomains.join("\n")
-    })
-
-    const resolved = stdout.split("\n").filter(Boolean).map((line) => {
-      const data = JSON.parse(line);
-      return {
-        host: data.host,
-        ip: data.a?.[0] || "0.0.0.0", // tomamos la primer ipv4
-      }
-    })
-    console.log(`[✓] ${resolved.length} dominios resolvieron correctamente.`);
-    return resolved;
-  } catch (e) {
-    console.log(e)
-    return [];
-  }
-}
-
-
-
-
-async function httpCheck(resolvedDomains: HttpCheck[]) {
-  console.log(`[+] Lanzando HTTP Check (Fase 3) para ${resolvedDomains.length} dominios...`);
-
-  const hostList = resolvedDomains.map(d => d.host).join("\n");
-
-  try {
-    const { stdout } = await execa('httpx-toolkit', [
-      "-silent",
-      "-no-color",
-      "-threads", "50"
-    ], {
-      input: hostList,
-      timeout: 300000
-    });
-
-    const res = stdout.split("\n").filter(Boolean)
-
-    if (res.length === 0 && resolvedDomains.length > 0) {
-      throw new Error("httpx devolvio un output vacio");
-    }
-    console.log(`[✓] ${res.length} dominios http validados`)
-    return res
-  } catch (e) {
-    console.warn("[!]  FALLÓ o dio error. Fallback...");
-
-    return resolvedDomains.map(d => `http://${d.host}`);
-  }
-}
-
-
-/*  ========================= */
-/* 3. obtenemos metadata */
-/* ========================= */
-
-async function getMetadata(httpDomainsValidated: string[]) {
-  console.log(`[+]  Intentando obtener metada de  ${httpDomainsValidated.length} dominios...`)
-
-
-  try {
-    const { stdout } = await execa('httpx-toolkit', [
-      "-silent",
-      "-no-color",
-      "-title",
-      "-web-server",
-      "-status-code",
-      "-json",
-      "-threads",
-      "50"], {
-      input: httpDomainsValidated.join("\n"),
-      timeout: 300000
-    });
-
-    console.log(`[✓] Metadata obtenida `)
-    return stdout.split("\n")
-      .filter(Boolean)
-      .map(line => JSON.parse(line));
-
-  } catch (e) {
-    console.error("[-] Error en getMetadata:", e);
-    return []
-  }
-}
-
-
-async function getASN(ip: string): Promise<{ asn: string, prefix: string, country: string }> {
-  const revIp = ip.split('.').reverse().join('.');
-  const query = `${revIp}.origin.asn.cymru.com`;
-
-  try {
-    const records = await resolveTxt(query); // Función directa
-    const firstEntry = records?.[0]?.[0];
-    if (firstEntry) {
-      const parts = firstEntry.split('|').map(p => p.trim());
-      return {
-        asn: parts[0] ? `AS${parts[0]}` : "AS_UNKNOWN",
-        prefix: parts[1] || "Unknown",
-        country: parts[2] || "Unknown"
-      };
-    }
-  } catch (e) {
-    console.log(e)
-    return {
-      asn: "AS_UNKNOWN", prefix: "Unknown", country: "Unknown"
-    }
-  }
-
-  return { asn: "AS_UNKNOWN", prefix: "Unknown", country: "Unknown" };
-}
-
-
-
-export async function enrichWithASN(resolvedDomains: { host: string, ip: string }[]) {
-  console.log(`[+] Consultando ASN para ${resolvedDomains.length} IPs...`);
-
-  const enriched = await Promise.all(resolvedDomains.map(async (item) => {
-    const intel = await getASN(item.ip);
-    // Usamos ...intel para que las propiedades salgan del objeto y entren a 'item'
-    return { ...item, ...intel };
-  }));
-
-  return enriched;
 }
 
 
@@ -268,49 +125,7 @@ async function runHttpPhase(previousData: any[]) {
 
 async function main(target: string) {
   try {
-    // 1. Recolección
-    const allDomains = await getAllSubdomains(target);
-
-    // 2. Resolución DNS (Acá obtenemos las IPs)
-    const domainsResolved = await domainResolver(allDomains);
-
-
-    // 3. Enriquecimiento con ASN (Usamos las IPs de domainsResolved)
-    const domainsWithASN = await enrichWithASN(domainsResolved);
-
-    // 4. Validación HTTP (Filtramos quién responde)
-    const httpUrls = await httpCheck(domainsResolved);
-
-    // 5. Metadata Detallada (Títulos, Servers, etc.)
-    const metadata = await getMetadata(httpUrls);
-
-    // 6. CLASIFICACIÓN Y FUSIÓN
-    // Primero armamos el preReport
-    const preReport = domainsWithASN.map(domain => {
-      const webData = metadata.find(m =>
-        m.input === domain.host ||
-        m.url?.includes(domain.host)
-      );
-
-      // Armamos el objeto base
-      const baseData = {
-        host: domain.host,
-        ip: domain.ip,
-        asn: domain.asn,
-        asn_owner: domain.prefix, // Cymru suele poner el nombre en el campo prefix o similar
-        country: domain.country,
-        url: webData?.url || `http://${domain.host}`,
-        status_code: webData?.status_code || 0,
-        title: webData?.title || "N/A",
-        webserver: webData?.webserver || "N/A",
-        cdn: webData?.webserver?.toLowerCase().includes("cloudflare") ? "cloudflare" : "none"
-      };
-
-      // 7. Aplicamos la clasificación AQUÍ
-      return classifyTarget(baseData);
-    });
-
-
+const preReport=[]
 
 
     // 8. FASE HTTP (Solo a los que están vivos)
