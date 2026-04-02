@@ -1,5 +1,7 @@
 import { execa } from "execa";
 import {subfinder,assetfinder} from "../../shared/utils.ts";
+import { logger } from "../../shared/errorLogger.ts";
+
 /*  ========================= */
 /* 1. buscamos subdominios */
 /* ========================= */
@@ -9,7 +11,7 @@ async function runSubdomainFinderThroughApi(target: string) {
     const { stdout } = await execa(subfinder, ["-d", target, "-silent"]);
     return stdout.split("\n").filter(Boolean);
   } catch (e) {
-    console.log(e);
+    logger.error("SUBFINDER", `${target}, fallo en obtener subdominios. Error:${e}`)
   }
 }
 
