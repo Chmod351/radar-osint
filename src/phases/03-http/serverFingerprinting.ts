@@ -1,4 +1,4 @@
-import { execa } from "execa"
+import { execa } from "execa";
 import { unlink, readFile } from "node:fs/promises";
 
 
@@ -33,8 +33,8 @@ export class WhatWebService {
     const tempFile = `/tmp/whatweb_${Date.now()}.json`;
     try {
       // 1. Ejecutamos WhatWeb guardando en un archivo real
-      await execa('whatweb', [
-        '--color=never',
+      await execa("whatweb", [
+        "--color=never",
         `--log-json=${tempFile}`,
         target
       ], { reject: false });
@@ -51,7 +51,7 @@ export class WhatWebService {
       return this.parsePlugins(parsed[0]?.plugins || {});
 
     } catch (error) {
-      console.error(`[!] Error en sensor (File Mode):`, error);
+      console.error("[!] Error en sensor (File Mode):", error);
       // Intentar borrar el archivo si quedó ahí
       try { await unlink(tempFile); } catch { }
       return [];
@@ -83,23 +83,21 @@ export class WhatWebService {
 }
 
 
-
-
 // --- Lógica de ejecución ---
 const scanner = new WhatWebService();
 
 export async function getTechStack(target: string) {
   if (!target) {
-    console.log("No se detecto un target")
+    console.log("No se detecto un target");
   }
   try {
     const techStack = await scanner.scan(target);
     if (techStack.length > 0) {
-      return techStack
+      return techStack;
     } else {
       console.log(`[-] No se detectaron tecnologías adicionales en ${target}.`);
     }
   } catch (e) {
-    console.log("fallo whatweb", e)
+    console.log("fallo whatweb", e);
   }
 }

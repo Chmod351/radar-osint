@@ -1,6 +1,9 @@
-import { execa } from "execa"
-import type { AnalyzedTarget,SearchSploitOutput,SearchSploitResult } from "../../shared/types"
-import {noise} from "../../shared/utils"
+import { execa } from "execa";
+import type { AnalyzedTarget,SearchSploitResult } from "../../shared/types";
+import {noise} from "../../shared/utils";
+import { logger } from "../../shared/errorLogger";
+
+
 
 export async function findExploits(detectedServer: string) {
   // 1. Limpieza y validación inicial
@@ -28,22 +31,26 @@ const match = detectedServer.match(/^([a-zA-Z0-9\-_]+)\/?([0-9.]*)/);
        // Solo verificamos que el nombre del software esté en el título
        return title.includes(family);
     });
-  } catch (e) { return []; }
+  } catch (e) { 
+    const err= `${detectedServer} FALLÓ EL RESOLVER ${e}`
+     logger.error("FINDEXPLOITS", err )
+    return []; 
+  }
 }
 
 
 const MANAGED_PROVIDERS = [
-  'cloudflare', 'akamai', 'github', 'amazon', 'aws', 'cloudfront', 
-  'google', 'gws', 'azure', 'microsoft-edge', 'incapsula', 'sucuri'
+  "cloudflare", "akamai", "github", "amazon", "aws", "cloudfront", 
+  "google", "gws", "azure", "microsoft-edge", "incapsula", "sucuri"
 ];
 
 function isInfrastructureManaged(item: AnalyzedTarget): boolean {
   const server = item.webserver.toLowerCase();
-  const cdn = item.cdn?.toLowerCase() || 'none';
-  const owner = item.asn_owner?.toLowerCase() || '';
+  const cdn = item.cdn?.toLowerCase() || "none";
+  const owner = item.asn_owner?.toLowerCase() || "";
 
   return (
-    cdn !== 'none' || 
+    cdn !== "none" || 
     MANAGED_PROVIDERS.some(p => server.includes(p)) ||
     MANAGED_PROVIDERS.some(p => owner.includes(p))
   );
@@ -53,7 +60,7 @@ export function triageInfra(serverExploits: SearchSploitResult[], item: Analyzed
   const server = item.webserver;
   const serverLower = server.toLowerCase();
   
-  const isUnknown = ['n/a', '???', 'unknown'].includes(serverLower);
+  const isUnknown = ["n/a", "???", "unknown"].includes(serverLower);
   if (item.status_code === "ERR" || isUnknown) return "⚪ N/A";
 
   if (isInfrastructureManaged(item)) return "🛡️ WAF/CLOUD";

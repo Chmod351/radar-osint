@@ -1,11 +1,11 @@
-import {getMetadata,httpCheck,classifyTarget,domainResolver} from './resolver.ts'
-import {enrichWithASN} from './ansLookup.ts'
-import  {whoisController} from './whois.ts'
+import {getMetadata,httpCheck,classifyTarget,domainResolver} from "./resolver.ts";
+import {enrichWithASN} from "./ansLookup.ts";
+import  {whoisController} from "./whois.ts";
 import type { AnalyzedTarget } from "../../shared/types";
 
 
 export async function dnsPhase(allDomains: string[]) {
-  console.log("iniciando fase dns")
+  console.log("iniciando fase dns");
   
   const domainsResolved = await domainResolver(allDomains);
   const domainsWithASN = await enrichWithASN(domainsResolved);
@@ -29,7 +29,7 @@ export async function dnsPhase(allDomains: string[]) {
       cdn: webData?.webserver?.toLowerCase().includes("cloudflare") ? "cloudflare" : "none"
     };
 
-    return classifyTarget(baseData) as AnalyzedTarget
+    return classifyTarget(baseData) as AnalyzedTarget;
   });
   
     await whoisController(preReport);

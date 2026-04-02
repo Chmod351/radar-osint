@@ -5,14 +5,14 @@ import { resolveTxt } from "node:dns/promises";
 /* ========================= */
 
  async function getASN(ip: string): Promise<{ asn: string, prefix: string, country: string }> {
-  const revIp = ip.split('.').reverse().join('.');
+  const revIp = ip.split(".").reverse().join(".");
   const query = `${revIp}.origin.asn.cymru.com`;
 
   try {
     const records = await resolveTxt(query); // Función directa
     const firstEntry = records?.[0]?.[0];
     if (firstEntry) {
-      const parts = firstEntry.split('|').map(p => p.trim());
+      const parts = firstEntry.split("|").map(p => p.trim());
       return {
         asn: parts[0] ? `AS${parts[0]}` : "AS_UNKNOWN",
         prefix: parts[1] || "Unknown",
@@ -20,10 +20,10 @@ import { resolveTxt } from "node:dns/promises";
       };
     }
   } catch (e) {
-    console.log(e)
+    console.log(e);
     return {
       asn: "AS_UNKNOWN", prefix: "Unknown", country: "Unknown"
-    }
+    };
   }
 
   return { asn: "AS_UNKNOWN", prefix: "Unknown", country: "Unknown" };
