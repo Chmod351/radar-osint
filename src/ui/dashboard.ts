@@ -45,14 +45,13 @@ export function dashboard(finalReport: AnalyzedTarget[]): void {
   const tableFriendlyReport = finalReport.map(item => {
     // Definimos valores por defecto para los datos opcionales de las fases
     const intel: Partial<HttpIntel> = item.http_intel || {};
-    const stack: Technology[] = item.http_stack || [];
+const stack: Technology[] = item.http_stack || [];
     const sec = intel.security || { hsts: false, csp: false, xfo: false, nosniff: false };
     
     // Lógica de status: preferimos el status real de la petición HTTP
     const realStatus = item.http_intel?.status || item.status_code || "ERR";
     
-    // Obtenemos alertas del controlador de vulnerabilidades
-    const vulnAlert = exploitController(item);
+    
     const priorityLabel = calculatePriority(item);
 
     const { serverInfo, formatSec, techSummary } = ServerInfo(item, intel, stack);
@@ -63,8 +62,11 @@ export function dashboard(finalReport: AnalyzedTarget[]): void {
       status: realStatus,
       HSTS: formatSec(sec.hsts),
       server: serverInfo.slice(0, 20),
-      exploits: vulnAlert,
+      infra_status:item.infra_status,
+      app_status:item.app_status,
       tech: techSummary,
+      cdn:item.cdn,
+      cookies:item?.http_intel?.cookies
     };
   });
 
