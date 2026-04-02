@@ -20,7 +20,7 @@ async function runSubdomainFinderThroughCertificates(target: string) {
     const { stdout } = await execa(assetfinder, ["--subs-only", target]);
     return stdout.split("\n").filter(Boolean);
   } catch (e) {
-    console.log(e);
+    logger.error("ASSETFINDER", `${target} fallo en obtenerminio, ${e}`)
   }
 }
 
@@ -46,7 +46,7 @@ export async function getAllSubdomains(target: string) {
 
   return Array.from(allSubdomains);
   }catch(e){
-     console.log(e);
+     logger.error("GETALLSUBDOMAINS",`${target}, fallo al juntar subdominios ${e}`)
   }
 }
 
