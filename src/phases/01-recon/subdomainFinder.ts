@@ -1,107 +1,91 @@
 import { execa } from "execa";
-import {subfinder,assetfinder} from "../../shared/utils.ts";
+import { subfinder, assetfinder } from "../../shared/utils.ts";
+import readline from "readline";
 import { logger } from "../../shared/errorLogger.ts";
-
-/*  ========================= */
-/* 1. buscamos subdominios */
-/* ========================= */
-
-async function runSubdomainFinderThroughApi(target: string) {
+/**
+ * Ejecuta un comando y emite cada línea de STDOUT como un evento del stream.
+ */
+async function* runSubdomainStream(cmd: string, args: string[]): AsyncIterable<string> {
   try {
-    const { stdout } = await execa(subfinder, ["-d", target, "-silent"]);
-    return stdout.split("\n").filter(Boolean);
+    const childProcess = execa(cmd, args, {
+      stdout: "pipe",
+      stderr: "pipe"
+    });
+
+    const rl = readline.createInterface({
+      input: childProcess.stdout!,
+      terminal: false
+    });
+
+    for await (const line of rl) {
+      const cleanLine = line.trim().toLowerCase();
+      if (cleanLine) yield cleanLine;
+    }
+
+    await childProcess; 
   } catch (e) {
-    logger.error("SUBFINDER", `${target}, fallo en obtener subdominios. Error:${e}`)
+    logger.error("BIN-STREAM", `Error en stream de ${cmd}:`, e);
   }
 }
 
-async function runSubdomainFinderThroughCertificates(target: string) {
-  try {
-    const { stdout } = await execa(assetfinder, ["--subs-only", target]);
-    return stdout.split("\n").filter(Boolean);
-  } catch (e) {
-    logger.error("ASSETFINDER", `${target} fallo en obtenerminio, ${e}`)
-  }
-}
+ /**
+ * FASE 1: RECON (Paralelismo Real y Deduplicación en Vuelo)
+ * Ambas fuentes corren en paralelo. El primero que encuentra, emite.
+ */
+export async function* streamAllSubdomains(target: string): AsyncIterable<string> {
+  const seen = new Set<string>(); // Memoria para evitar duplicados
+  logger.info("RECON", `[*] Radar activado: Escaneo paralelo para ${target}`);
 
-// deduplica y arma la coleccion
-export async function getAllSubdomains(target: string) {
-  try{
-  const res = await Promise.allSettled([
-    runSubdomainFinderThroughApi(target),
-    runSubdomainFinderThroughCertificates(target)
-  ]);
+  const sources = [
+    { name: "Subfinder", cmd: subfinder, args: ["-d", target, "-silent"] },
+    { name: "Assetfinder", cmd: assetfinder, args: ["--subs-only", target] }
+  ];
 
-  const allSubdomains = new Set<string>();
+  // Cola intermedia para los hallazgos
+  const outputQueue: string[] = [];
+  let activeSources = sources.length;
+  
+  // Mecanismo de señalización para despertar al generador
+  let signalResolver: (() => void) | null = null;
 
-  res.forEach((result, index) => {
-    if (result.status === "fulfilled" && result.value) {
-      result.value.forEach(sub => allSubdomains.add(sub));
-      console.log(`[+] Fuente ${index === 0 ? "Subfinder" : "Assetfinder"} completada.`);
-    } else {
-
-      console.error(`[-] Fuente ${index === 0 ? "Subfinder" : "Assetfinder"} falló.`);
+  // LANZAMIENTO PARALELO (forEach no bloquea)
+  sources.forEach(async (source) => {
+    try {
+      for await (const sub of runSubdomainStream(source.cmd, source.args)) {
+        // DEDUPLICACIÓN EN TIEMPO REAL
+        if (!seen.has(sub)) {
+          seen.add(sub);
+          outputQueue.push(sub);
+          
+          // Despertamos al generador si está esperando
+          if (signalResolver) {
+            signalResolver();
+            signalResolver = null;
+          }
+        }
+      }
+    } finally {
+      activeSources--;
+      // Notificamos fin de fuente para verificar cierre de flujo
+      if (signalResolver) {
+        signalResolver();
+        signalResolver = null;
+      }
+      logger.debug("RECON", `Fuente ${source.name} completada.`);
     }
   });
 
-  return Array.from(allSubdomains);
-  }catch(e){
-     logger.error("GETALLSUBDOMAINS",`${target}, fallo al juntar subdominios ${e}`)
+  // BUCLE DE EMISIÓN: Mantiene el flujo vivo mientras haya datos o fuentes vivas
+  while (activeSources > 0 || outputQueue.length > 0) {
+    if (outputQueue.length > 0) {
+      yield outputQueue.shift()!;
+    } else {
+      // Espera eficiente (IDLE) hasta que llegue una señal
+      await new Promise<void>((resolve) => {
+        signalResolver = resolve;
+      });
+    }
   }
+
+  logger.info("RECON", `[#] Recon finalizado. Objetivos únicos: ${seen.size}`);
 }
-
-
-
-/* import readline from "readline"; */
-/*  */
-/* async function* runSubdomainStream(cmd: string, args: string[]): AsyncIterable<string> { */
-/*   try { */
-/*     const childProcess = execa(cmd, args, { */
-/*       stdout: "pipe", */
-/*       stderr: "pipe" */
-/*     }); */
-/*  */
-/*     // Creamos una interfaz de lectura línea por línea */
-/*     const rl = readline.createInterface({ */
-/*       input: childProcess.stdout!, */
-/*       terminal: false */
-/*     }); */
-/*  */
-/*     for await (const line of rl) { */
-/*       const cleanLine = line.trim().toLowerCase(); */
-/*       if (cleanLine) yield cleanLine; */
-/*     } */
-/*  */
-/*     await childProcess; // Esperamos a que el proceso cierre limpio */
-/*   } catch (e) { */
-/*     console.error(`[!] Error en el stream de ${cmd}:`, e); */
-/*   } */
-/* } */
-/*  */
-/* export async function getAllSubdomains(target: string): Promise<string[]> { */
-/*   const allSubdomains = new Set<string>(); */
-/*   console.log(`[*] Iniciando recolección de streams para: ${target}`); */
-/*  */
-/*   // Definimos las fuentes como promesas que consumen sus respectivos streams */
-/*   const sources = [ */
-/*     { name: "Subfinder", stream: runSubdomainStream("subfinder", ["-d", target, "-silent"]) }, */
-/*     { name: "Assetfinder", stream: runSubdomainStream("assetfinder", ["--subs-only", target]) } */
-/*   ]; */
-/*  */
-/*   try { */
-/*     // Procesamos todas las fuentes en paralelo */
-/*     await Promise.all(sources.map(async (source) => { */
-/*       for await (const sub of source.stream) { */
-/*         allSubdomains.add(sub); */
-/*       } */
-/*       console.log(`[+] Fuente ${source.name} finalizada.`); */
-/*     })); */
-/*  */
-/*     console.log(`[#] Recolección total completada: ${allSubdomains.size} subdominios únicos.`); */
-/*     return Array.from(allSubdomains); */
-/*  */
-/*   } catch (e) { */
-/*     console.error("[!] Error crítico en el orquestador:", e); */
-/*     return Array.from(allSubdomains); // Devolvemos lo que llegamos a recolectar */
-/*   } */
-/* } */
