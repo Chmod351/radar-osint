@@ -54,6 +54,8 @@ export interface AnalyzedTarget {
   
   // Datos de Fase 4
   vulnerabilities?: SearchSploitResult[]
+  infra_status?:string,
+  app_status?:string,
 
   whois?: WhoisIntel;
   whois_raw?: any;
