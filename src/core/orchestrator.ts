@@ -1,5 +1,5 @@
 import { reconPhase } from "../phases/01-recon";
-import { dnsPhase } from "../phases/02-dns";
+import { dnsPhaseStream } from "../phases/02-dns";
 import { httpPhase } from "../phases/03-http";
 import { analysisPhase } from "../phases/04-analysis";
 import {dashboard}from "../ui/dashboard.ts";
@@ -8,6 +8,7 @@ import { normalizeTarget } from "../shared/urlNormalizer.ts";
 
 
 import { logger } from "../shared/errorLogger.ts";
+import { start } from "repl";
 
 export class Orchestrator {
   private concurrencyLimit = 15;
@@ -19,15 +20,17 @@ export class Orchestrator {
     try {
       // 1. Iniciamos la canilla de subdominios
       const subdomainStream = reconPhase(target);
+      const analyzedTargets = dnsPhaseStream(subdomainStream);
+
       const activeWorkers = new Set<Promise<void>>();
 
-      for await (const subdomain of subdomainStream) {
+      for await (const target of analyzedTargets ) {
         if (activeWorkers.size >= this.concurrencyLimit) {
           await Promise.race(activeWorkers);
         }
 
         // El worker ahora llama a una cadena de funciones de "index"
-        const worker = this.processPipeline(subdomain, finalResults).finally(() => {
+        const worker = this.processRestOfPipeline(target, finalResults).finally(() => {
           activeWorkers.delete(worker);
         });
 
@@ -49,33 +52,35 @@ export class Orchestrator {
    * Aquí el orquestador solo delega a los "index" de cada fase.
    * Cada fase recibe un array de 1 elemento para mantener compatibilidad.
    */
-  private async processPipeline(domain: string, results: any[]) {
+  private async processRestOfPipeline(target:any,results:any[]) {
     try {
-      const singleTargetArray = [domain];
-
-      // Fase 2: DNS & Infra (Llamada al index de la fase 02)
-      const infrastructure = await dnsPhase(singleTargetArray);
-      if (!infrastructure || infrastructure.length === 0) return;
-
-      // Fase 3: HTTP & Fingerprinting (Llamada al index de la fase 03)
-      const webAssets = await httpPhase(infrastructure);
-      if (!webAssets || webAssets.length === 0) return;
-
-      // Fase 4: Análisis de Vulnerabilidades (Llamada al index de la fase 04)
-      const finalReport = await analysisPhase(webAssets);
+      // Aquí vendrían las llamadas a Fase 3 y 4
+      // Ejemplo: 
+      // const webData = await httpPhaseAtómico(target);
+      // const report = await analysisPhaseAtómico(webData);
       
-      // Guardamos el resultado atómico
-      if (finalReport && finalReport.length > 0) {
-        results.push(finalReport[0]);
-      }
-
-      logger.debug("PIPELINE", `Flujo completado para: ${domain}`);
+      results.push(target); 
+      logger.debug("PIPELINE", `Finalizado: ${target.host}`);
     } catch (e) {
-      logger.error("PIPELINE", `Error en el flujo de ${domain}`, e);
-    }
-  }
+      logger.error("PIPELINE", `Error en fases finales para ${target.host}`, e);
+    }  }
 }
 
 
+async function main(target:string) {
+  
+  const orchestrator = new Orchestrator();
 
+  try {
+    // El método start es público, así que accedemos directamente
+    await orchestrator.start(target);
+  } catch (error) {
+    logger.error("MAIN", "Fallo catastrófico en la ejecución del Radar", error);
+    process.exit(1);
+  }
+}
+
+if (TARGET) {
+  main(TARGET);
+}
 
