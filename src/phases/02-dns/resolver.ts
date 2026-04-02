@@ -1,82 +1,58 @@
 import { execa } from "execa";
+import { logger } from "../../shared/errorLogger.ts";
 
-interface HttpCheck {
-  host: string,
-  ip: string
+/**
+ * INTERFACES DE SALIDA ATÓMICA
+ */
+export interface ResolvedDomain {
+  host: string;
+  ip: string;
 }
 
+export interface WebMetadata {
+  url: string;
+  status_code: number;
+  title: string;
+  webserver: string;
+  cdn: string;
+}
 
-/*  ========================= */
-/* 2. Resolvemos los subdominios */
-/* ========================= */
-
-// resuelve los subdominios y los filtra
-export async function domainResolver(subdomains: string[]) {
+/**
+ * 1. RESOLVER DOMINIO (Atómico)
+ * Recibe UN dominio, devuelve host e ip.
+ */
+export async function resolveSingleDomain(domain: string): Promise<ResolvedDomain | null> {
   try {
-    const { stdout } = await execa("dnsx", [
+    // Ejecución directa para un solo target. Más rápido que usar stdin/input.
+    const { stdout } =await execa("dnsx", [
       "-json",
       "-silent",
       "-nc",
       "-a",
-      "-resp"
-    ], {
-      input: subdomains.join("\n")
-    });
+      "-resp", ],
+      { input:domain,
+        timeout: 10000 });
 
-    const resolved = stdout.split("\n").filter(Boolean).map((line) => {
-      const data = JSON.parse(line);
-      return {
-        host: data.host,
-        ip: data.a?.[0] || "0.0.0.0", // tomamos la primer ipv4
-      };
-    });
-    return resolved;
+    if (!stdout.trim()) return null;
+
+    const data = JSON.parse(stdout);
+    logger.debug("RESOLVE SINGLE DOMAIN", `success: ${data}`)
+    return {
+      host: data.host,
+      ip: data.a?.[0] || "0.0.0.0",
+    };
   } catch (e) {
-    console.log(e);
-    return [];
+    logger.error("RESOLVER-SINGLE-DOMAIN", `${e}`)
+    // No logueamos error aquí para no ensuciar si el dominio simplemente no existe
+    return null;
   }
 }
 
-
-
-
-export async function httpCheck(resolvedDomains: HttpCheck[]) {
-
-  const hostList = resolvedDomains.map(d => d.host).join("\n");
-
-  try {
-    const { stdout } = await execa("httpx-toolkit", [
-      "-silent",
-      "-no-color",
-      "-threads", "50"
-    ], {
-      input: hostList,
-      timeout: 300000
-    });
-
-    const res = stdout.split("\n").filter(Boolean);
-
-    if (res.length === 0 && resolvedDomains.length > 0) {
-      throw new Error("httpx devolvio un output vacio");
-    }
-    console.log(`[✓] ${res.length} dominios http validados`);
-    return res;
-  } catch (e) {
-    console.warn("[!]  FALLÓ o dio error. Fallback",e);
-
-    return resolvedDomains.map(d => `http://${d.host}`);
-  }
-}
-
-
-/*  ========================= */
-/* 3. obtenemos metadata */
-/* ========================= */
-
-export async function getMetadata(httpDomainsValidated: string[]) {
-  console.log(`[+]  Intentando obtener metada de  ${httpDomainsValidated.length} dominios...`);
-
-
+/**
+ * 2. ENRIQUECIMIENTO WEB (Atómico)
+ * Valida HTTP y obtiene metadata en un solo paso.
+ */
+export async function enrichWebData(host: string): Promise<WebMetadata> {
   try {
     const { stdout } = await execa("httpx-toolkit", [
       "-silent",
@@ -84,44 +60,47 @@ export async function getMetadata(httpDomainsValidated: string[]) {
       "-title",
       "-web-server",
       "-status-code",
+      // "-threads",
       "-json",
-      "-threads",
-      "50"], {
-      input: httpDomainsValidated.join("\n"),
-      timeout: 300000
-    });
+      "50",
+    ], {input:host, 
+      timeout: 20000 });
 
-    console.log("[✓] Metadata obtenida ");
-    return stdout.split("\n")
-      .filter(Boolean)
-      .map(line => JSON.parse(line));
+    if (!stdout.trim()) throw new Error("No web response");
 
-  } catch (e) {
-    console.error("[-] Error en getMetadata:", e);
-    return [];
+    const data = JSON.parse(stdout);
+    
+    return {
+      url: data.url || `http://${host}`,
+      // Manejo de discrepancias entre versiones de httpx-toolkit
+      status_code: data.status_code || data["status-code"] || 0,
+      title: data.title || "N/A",
+      webserver: data.web_server || data.server || data.webserver || "N/A",
+      cdn: (data.web_server || data.server || "").toLowerCase().includes("cloudflare") ? "cloudflare" : "none"
+    };  } catch (e) {
+    // Fallback: Si falla el escaneo profundo, devolvemos lo básico
+    logger.error("ENRICH", `${host} fallo con error: ${e}, mandando fallback`)
+    return {
+      url: `http://${host}`,
+      status_code: 0,
+      title: "N/A",
+      webserver: "N/A",
+      cdn: "none"
+    };
   }
 }
 
-export function classifyTarget(domainData: {
-host: string;
-  ip: string;
-  asn: string;
-  asn_owner: string;
-  country: string;
-  url: any;
-  status_code: any;
-  title: any;
-  webserver: any;
-  whois?:any;
-  cdn: string;
-}) {
+/**
+ * 3. CLASIFICADOR DE TARGET (Lógica Pura)
+ * Mantiene la lógica de negocio para decidir qué hacer con el target.
+ */
+export function classifyTarget(domainData: any) {
   const cloudKeywords = [
     "amazon", "google", "microsoft", "cloudflare", "akamai",
     "fastly", "ovh", "digitalocean", "linode", "vercel", "github"
   ];
 
   const asnOwner = domainData.asn_owner?.toLowerCase() || domainData.asn?.toLowerCase() || "";
-
   const isCloud = cloudKeywords.some(key => asnOwner.includes(key));
 
   return {
@@ -130,6 +109,6 @@ host: string;
     infra_type: isCloud ? "Cloud/CDN" : "P/Self-H",
     action: isCloud ? "SKIP_DEEP" : "SCAN_READY",
     whois:undefined,
-    vulnerabilities:[],
+    vulnerabilities: [],
   };
 }

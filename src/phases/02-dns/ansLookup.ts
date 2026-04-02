@@ -1,16 +1,30 @@
 import { resolveTxt } from "node:dns/promises";
+import { logger } from "../../shared/errorLogger.ts";
 
-/*  ========================= */
-/* 2.2. IDENTIFICAR TECNOLOGIAS */
-/* ========================= */
+/**
+ * INTERFAZ DE INTELIGENCIA DE RED
+ */
+export interface ASNIntel {
+  asn: string;
+  prefix: string;
+  country: string;
+}
 
- async function getASN(ip: string): Promise<{ asn: string, prefix: string, country: string }> {
+
+export async function getASNInfo(ip: string): Promise<ASNIntel> {
+  // Validamos IP básica para evitar consultas basura
+  if (!ip || ip === "0.0.0.0") {
+    return { asn: "AS_UNKNOWN", prefix: "Unknown", country: "Unknown" };
+  }
+
   const revIp = ip.split(".").reverse().join(".");
   const query = `${revIp}.origin.asn.cymru.com`;
 
   try {
-    const records = await resolveTxt(query); // Función directa
+    // Timeout implícito de node:dns/promises
+    const records = await resolveTxt(query); 
     const firstEntry = records?.[0]?.[0];
+
     if (firstEntry) {
       const parts = firstEntry.split("|").map(p => p.trim());
       return {
@@ -19,27 +33,14 @@ import { resolveTxt } from "node:dns/promises";
         country: parts[2] || "Unknown"
       };
     }
-  } catch (e) {
-    console.log(e);
-    return {
-      asn: "AS_UNKNOWN", prefix: "Unknown", country: "Unknown"
-    };
+  } catch (e: any) {
+    // Si el error es NXDOMAIN, la IP no tiene ASN asociado (común en IPs privadas o raras)
+    if (e.code !== 'ENOTFOUND') {
+      logger.debug("ASN-LOOKUP", `No se encontró registro para ${ip}`);
+    }
   }
 
   return { asn: "AS_UNKNOWN", prefix: "Unknown", country: "Unknown" };
 }
 
-
-
-export async function enrichWithASN(resolvedDomains: { host: string, ip: string }[]) {
-  console.log(`[+] Consultando ASN para ${resolvedDomains.length} IPs...`);
-
-  const enriched = await Promise.all(resolvedDomains.map(async (item) => {
-    const intel = await getASN(item.ip);
-    // Usamos ...intel para que las propiedades salgan del objeto y entren a 'item'
-    return { ...item, ...intel };
-  }));
-
-  return enriched;
-}
 
