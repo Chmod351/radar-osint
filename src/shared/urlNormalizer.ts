@@ -11,7 +11,7 @@ export function normalizeTarget(input: string): string {
   clean = clean.replace(/^(?:f|ht)tps?:\/\//, "");
 
   // 2. Eliminar el path, query strings o puertos (dominio.com/admin?id=1 -> dominio.com)
-  clean = clean.split('/')[0].split('?')[0].split(':')[0];
+  clean = clean.split("/")[0].split("?")[0].split(":")[0];
 
   // 3. Eliminar el 'www.' inicial si existe
   // Usamos una regex que solo pegue al principio
