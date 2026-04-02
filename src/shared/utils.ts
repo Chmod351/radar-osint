@@ -1,12 +1,12 @@
 
-export const subfinder = "subfinder"
-export const assetfinder = "assetfinder"
+export const subfinder = "subfinder";
+export const assetfinder = "assetfinder";
 
 export const noise= ["UncommonHeaders", "Cookies", "HttpOnly", "Content-Language", 
     "X-Frame-Options", "X-XSS-Protection", "Strict-Transport-Security", 
     "X-Content-Type-Options", "Access-Control-Allow-Methods", 
     "Meta-Refresh-Redirect", "RedirectLocation", "PasswordField",
-    "X-Powered-By"]
+    "X-Powered-By"];
 
 
 export const noiseSet = new Set(noise);
@@ -24,12 +24,12 @@ export const USER_AGENTS = [
 
 export const RESULTS_BASE = process.env.RESULTS_BASE || "./results";
 export const TARGET = Bun.argv[2]; // Esto reemplaza al TARGET="$1"
-export const OP_DIR = `${RESULTS_BASE}/${TARGET}`
+export const OP_DIR = `${RESULTS_BASE}/${TARGET}`;
 
 
  export    const criticalKeywords = [
-        'svn', 'git', 'api', 'dev', 'stg', 'test', 'mail',
-        'vpn', 'admin', 'db', 'ssh', 'backup', 'internal'
+        "svn", "git", "api", "dev", "stg", "test", "mail",
+        "vpn", "admin", "db", "ssh", "backup", "internal"
       ];
 
 
@@ -40,8 +40,8 @@ export const OP_DIR = `${RESULTS_BASE}/${TARGET}`
 
 export async function dataSaver(finalReport:any){
   try{
-    await Bun.write(`${OP_DIR}/report.json`,JSON.stringify(finalReport,null,2))
+    await Bun.write(`${OP_DIR}/report.json`,JSON.stringify(finalReport,null,2));
   }catch(e){
-    console.log(e)
+    console.log(e);
   }
 }
