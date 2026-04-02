@@ -1,17 +1,38 @@
-import { exploitController } from "../phases/04-analysis/vulnScanner.ts"
-import { criticalKeywords } from "../shared/utils.ts"
+import { criticalKeywords,noise } from "../shared/utils.ts"
 import type { Technology } from "../phases/03-http/serverFingerprinting.ts"
 import type { AnalyzedTarget, HttpIntel } from "../shared/types";
+
+const REAL_TECH_FILTER = (t: Technology) => {
+ 
+  return !noise.some(n => t.name.includes(n));
+};
 
 /**
  * Determina la prioridad basada en el nombre del host y el estado de red.
  */
 function calculatePriority(item: AnalyzedTarget): "🔴 HIGH" | "⚪ LOW" {
+  if (item.ip === "0.0.0.0" || item.http_intel?.error === "Unreachable") {
+    return "⚪ LOW";
+  }
+
   const hasCriticalName = criticalKeywords.some(key => item.host.includes(key));
-  // Usamos el status_code de la fase 2 o el de la fase 3 si existe
-  const isLive = item.status_code === 200 || item.status_code === 301 || item.http_intel?.status === 200;
+
+  // Normalizamos a número para evitar el error de tipos en .includes()
+  const currentStatus = Number(item.http_intel?.status || item.status_code || 0);
+  
+  const isLive = [200, 301, 302, 403].includes(currentStatus);
   
   return (isLive || hasCriticalName) ? "🔴 HIGH" : "⚪ LOW";
+}
+
+
+function calculateStatus(item:AnalyzedTarget){
+  if(item.ip==="0.0.0.0"){
+    return "DEAD"
+  }
+
+   return item.http_intel?.status || item.status_code || "ERR";
+
 }
 
 /**
@@ -43,33 +64,35 @@ function ServerInfo(item: AnalyzedTarget, intel: Partial<HttpIntel>, stack: Tech
  */
 export function dashboard(finalReport: AnalyzedTarget[]): void {
   const tableFriendlyReport = finalReport.map(item => {
-    // Definimos valores por defecto para los datos opcionales de las fases
-    const intel: Partial<HttpIntel> = item.http_intel || {};
-const stack: Technology[] = item.http_stack || [];
-    const sec = intel.security || { hsts: false, csp: false, xfo: false, nosniff: false };
+    const intel = item.http_intel || {};
+    // FILTRAMOS AQUÍ: Solo lo que no sea ruido
+    const rawStack = item.http_stack || [];
+    const cleanStack = rawStack.filter(REAL_TECH_FILTER);
     
-    // Lógica de status: preferimos el status real de la petición HTTP
-    const realStatus = item.http_intel?.status || item.status_code || "ERR";
+    const sec = intel.security || { hsts: false };
     
-    
+    // Usamos las funciones que ya corregiste
+    const realStatus = calculateStatus(item);
     const priorityLabel = calculatePriority(item);
 
-    const { serverInfo, formatSec, techSummary } = ServerInfo(item, intel, stack);
+    // Mandamos el stack limpio para el resumen de texto
+    const { serverInfo, techSummary } = ServerInfo(item, intel, cleanStack);
 
     return {
-      host: item.host.padEnd(25),
+      host: item.host.substring(0, 40), // Limitar para que no rompa la terminal
       priority: priorityLabel,
       status: realStatus,
-      HSTS: formatSec(sec.hsts),
-      server: serverInfo.slice(0, 20),
-      infra_status:item.infra_status,
-      app_status:item.app_status,
+      HSTS: (intel.error === "Unreachable") ? "--" : (sec.hsts ? "✔️" : "❌"),
+      server: serverInfo.slice(0, 15),
+      infra: item.infra_status || "⚪ N/A",
+      // app_status ya debe venir calculado con la lógica de triaje que vimos antes
+      app: item.app_status || "✅", 
       tech: techSummary,
-      cdn:item.cdn,
-      cookies:item?.http_intel?.cookies
+      cdn: item.cdn || "none"
     };
   });
 
-  console.log(`\n[🏁] REPORTE FINAL GENERADO: ${finalReport.length} objetivos analizados.`);
-  console.table(tableFriendlyReport.slice(0, 25));
+  console.log(`\n[🏁] RADAR FINALIZADO: ${finalReport.length} objetivos.`);
+  console.table(tableFriendlyReport.slice(0,25))
+
 }

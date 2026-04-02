@@ -2,6 +2,17 @@
 export const subfinder = "subfinder"
 export const assetfinder = "assetfinder"
 
+export const noise= ["UncommonHeaders", "Cookies", "HttpOnly", "Content-Language", 
+    "X-Frame-Options", "X-XSS-Protection", "Strict-Transport-Security", 
+    "X-Content-Type-Options", "Access-Control-Allow-Methods", 
+    "Meta-Refresh-Redirect", "RedirectLocation", "PasswordField",
+    "X-Powered-By"]
+
+
+export const noiseSet = new Set(noise);
+
+export const isRealTech = (techName: string) => !noiseSet.has(techName);
+
 
 
 export const USER_AGENTS = [

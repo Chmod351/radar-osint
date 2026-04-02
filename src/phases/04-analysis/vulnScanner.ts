@@ -1,6 +1,6 @@
 import { execa } from "execa"
 import type { AnalyzedTarget,SearchSploitOutput,SearchSploitResult } from "../../shared/types"
-
+import {noise} from "../../shared/utils"
 
 export async function findExploits(detectedServer: string) {
   // 1. Limpieza y validación inicial
@@ -73,24 +73,34 @@ export function triageInfra(serverExploits: SearchSploitResult[], item: Analyzed
 
 
 export function triageApp(appExploits: SearchSploitResult[], stack: any[]): string {
-  // Criterio A: Fuego en la aplicación (usando los exploits filtrados)
+  // 1. Prioridad Máxima: Si encontramos vulnerabilidades reales
   if (appExploits.length > 0) {
     return `💀 APP-VULN (${appExploits.length})`;
   }
 
-  const cms = stack.find(t => ["WordPress", "Joomla", "Drupal"].includes(t.name));
+  // 2. Definimos qué es "Stack Real" (Software, no headers)
+  const isNoise:string[] = noise;
 
-  // Criterio B: CMS
+  const cleanStack = stack.filter(t => 
+    !isNoise.some(n => t.name.includes(n))
+  );
+
+  // 3. Criterio CMS (WordPress, etc.)
+  const cms = cleanStack.find(t => ["WordPress", "Joomla", "Drupal", "Zimbra"].includes(t.name));
   if (cms) {
-    if (cms.version !== "unknown") {
-      return `📱 ${cms.name} v${cms.version} (R-M)`;
-    }
-    return `⚠️ ${cms.name} (Versión ocultada)`;
+    const version = cms.version !== "unknown" ? ` v${cms.version}` : "";
+    return `📱 ${cms.name}${version} (R-M)`;
   }
 
-  // Criterio C: Stack genérico
-  if (stack.length > 0) {
-    return `🛠️ ${stack[0].name}`;
+  // 4. Criterio Frameworks/Backend (Next.js, Express, PHP, etc.)
+  const backend = cleanStack.find(t => ["Next.js", "Express", "PHP", "Python", "Java", "Node.js"].includes(t.name));
+  if (backend) {
+    return `⚙️ ${backend.name}`;
+  }
+
+  // 5. Si no hay nada de lo anterior pero el stack limpio tiene algo (ej. Apache, Nginx)
+  if (cleanStack.length > 0) {
+    return `🛠️ ${cleanStack[0].name}`;
   }
 
   return "✅ STANDALONE";
@@ -109,13 +119,13 @@ export async function httpPhaseAndVulnerabilityPhaseMerger(enrichedItem: Analyze
     // 2. Capa de Aplicación (Stack)
     if (enrichedItem.http_stack && enrichedItem.http_stack.length > 0) {
         for (const tech of enrichedItem.http_stack) {
-            if (["WordPress", "PHP", "JQuery"].includes(tech.name)) {
-                const techQuery = `${tech.name} ${tech.version !== "unknown" ? tech.version : ""}`;
-                console.log(`[📡] Radar buscando Tech Stack: "${techQuery}"`);
-                
-                const results = await findExploits(techQuery);
-                techExploits = [...techExploits, ...results]; // Acumula sin pisar
-            }
+              const isNoise = noise.includes(tech.name);
+              if (!isNoise) {
+                 const techQuery = `${tech.name} ${tech.version !== "unknown" ? tech.version : ""}`;
+                 console.log(`[🎯] Radar apuntando a: "${techQuery}"`);
+                  const results = await findExploits(techQuery);
+                 techExploits = [...techExploits, ...results];
+               }
         }
     }
 
