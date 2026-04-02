@@ -1,5 +1,5 @@
-import { criticalKeywords,noise } from "../shared/utils.ts"
-import type { Technology } from "../phases/03-http/serverFingerprinting.ts"
+import { criticalKeywords,noise } from "../shared/utils.ts";
+import type { Technology } from "../phases/03-http/serverFingerprinting.ts";
 import type { AnalyzedTarget, HttpIntel } from "../shared/types";
 
 const REAL_TECH_FILTER = (t: Technology) => {
@@ -28,7 +28,7 @@ function calculatePriority(item: AnalyzedTarget): "🔴 HIGH" | "⚪ LOW" {
 
 function calculateStatus(item:AnalyzedTarget){
   if(item.ip==="0.0.0.0"){
-    return "DEAD"
+    return "DEAD";
   }
 
    return item.http_intel?.status || item.status_code || "ERR";
@@ -93,6 +93,6 @@ export function dashboard(finalReport: AnalyzedTarget[]): void {
   });
 
   console.log(`\n[🏁] RADAR FINALIZADO: ${finalReport.length} objetivos.`);
-  console.table(tableFriendlyReport.slice(0,25))
+  console.table(tableFriendlyReport.slice(0,25));
 
 }
