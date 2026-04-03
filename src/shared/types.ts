@@ -46,7 +46,7 @@ export interface AnalyzedTarget {
   infra_type: "Cloud/CDN" | "P/Self-H";
   // Inteligencia y Análisis
   priority: "HIGH" | "LOW";
-  action: "SCAN_READY" | "SKIP_DEEP";
+  action: "SCAN_READY" | "SKIP_DEEP" | "DUPLICATE_ALIAS";
   
   // Datos de Fase 3 (Opcionales hasta que pase por la fase)
   http_intel?: HttpIntel;

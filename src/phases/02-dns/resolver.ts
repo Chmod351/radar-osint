@@ -15,9 +15,6 @@ export interface WebMetadata {
   cdn: string;
 }
 
-
-
-
 /**
  * 1. RESOLVER DOMINIO 
  * Recibe UN dominio, devuelve host e ip.
@@ -121,6 +118,7 @@ export function classifyTarget(domainData: any) {
     }
     
   }
+  globalFingerprints.add(fingerprint)
 
   return {
     ...domainData,

@@ -26,13 +26,21 @@ console.log(subdomainStream)
           const analyzed = await dnsPhaseStream(sub);
           
           if (analyzed) {
+
+            if (analyzed.action !== "DUPLICATE_ALIAS") {
             // LLAMADA ATÓMICA 2: HTTP/NMAP
             const fullyEnriched = await fingerprintingPhase(analyzed);
             
-            if (fullyEnriched) {
-              finalResults.push(fullyEnriched);
-              logger.info("ORCHESTRATOR", `Target completado: ${sub}`);
+                if (fullyEnriched) {
+                   finalResults.push(fullyEnriched);
+                   logger.info("ORCHESTRATOR", `Target completado: ${sub}`);
+                }   
+            }else{
+                finalResults.push(analyzed)
+                  logger.info("ORCHESTRATOR", `Omitiendo escaneo profundo para : ${sub}`);
+
             }
+           
           }
         } catch (e) {
           logger.error("WORKER", `Error en pipeline para ${sub}: ${e}`);
