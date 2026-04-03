@@ -14,15 +14,16 @@ console.log(whoisCache)
  */
 export function getRootDomain(host: string): string {
   const parts = host.split(".");
-  // Si tiene TLD de 2 letras seguido de otro (ar, cl, uy, uk...), tomamos 3 partes
-  // Ej: x.com.ar -> x.com.ar | mail.google.com -> google.com
-  if (parts.length > 2) {
-    const last = parts[parts.length - 1];
-    const prev = parts[parts.length - 2];
-    if (last.length <= 2 && prev.length <= 3) {
-      return parts.slice(-3).join(".");
-    }
+  if (parts.length <= 2) return host;
+
+  // Manejo de TLDs compuestos (ar, cl, co.uk, etc)
+  const last = parts[parts.length - 1];
+  const prev = parts[parts.length - 2];
+  
+  if (last.length <= 2 && prev.length <= 3) {
+    return parts.slice(-3).join(".");
   }
+  
   return parts.slice(-2).join(".");
 }
 
@@ -80,19 +81,29 @@ export async function getWhoisIntel(host: string): Promise<any | null> {
   const root = getRootDomain(host);
 
   // Check de caché instantáneo
-  if (whoisCache.has(host)) {
-    return whoisCache.get(host);
-  }
-  try {
-    const { stdout } = await execa("whois", [host], { timeout: 15000 });
-    if (!stdout) return null;
 
-    const info = normalizeWhois(stdout);
-    whoisCache.set(root, info); // Guardamos para el próximo subdominio del mismo root
-    return info;
-  } catch (e) {
-    // Si falla, no guardamos nada para que el retry pueda volver a intentarlo
-    logger.error("WHOIS", `${host} fallo en obtener informacion:${e}`)
-    throw e; 
+ if (whoisCache.has(root)) {
+    logger.debug("WHOIS", `Usando caché para ${host} (root: ${root})`);
+    return whoisCache.get(root);
+  }
+logger.debug("CHECKING WHO IS REQUEST", `target of who is: ${root} and whois cache is: ${whoisCache}`)
+try {
+    // Intentamos ejecutar whois con un timeout agresivo
+    // Si el puerto 43 está cerrado, esto fallará rápido
+    const { stdout } = await execa("whois", [root], { 
+      timeout: 8000,
+      reject: true // Queremos capturar el error en el catch
+    });
+
+    if (!stdout || stdout.includes("No match for")) return null;
+
+    const parsed = parseWhoisAgnostic(stdout);
+    whoisCache.set(root, parsed);
+    return parsed;
+  } catch (error: any) {
+    // Silent fail: Si no hay conexión o el comando falla, 
+    // no bloqueamos el flujo, simplemente devolvemos null.
+    // Esto evita el spam de "Connection refused".
+    return null; 
   }
 }
