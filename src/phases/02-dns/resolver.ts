@@ -1,9 +1,7 @@
 import { execa } from "execa";
 import { logger } from "../../shared/errorLogger.ts";
 
-/**
- * INTERFACES DE SALIDA ATÓMICA
- */
+
 export interface ResolvedDomain {
   host: string;
   ip: string;
@@ -18,12 +16,12 @@ export interface WebMetadata {
 }
 
 /**
- * 1. RESOLVER DOMINIO (Atómico)
+ * 1. RESOLVER DOMINIO 
  * Recibe UN dominio, devuelve host e ip.
  */
 export async function resolveSingleDomain(domain: string): Promise<ResolvedDomain | null> {
   try {
-    // Ejecución directa para un solo target. Más rápido que usar stdin/input.
+    // Ejecución directa para un solo target.
     const { stdout } =await execa("dnsx", [
       "-json",
       "-silent",
@@ -49,7 +47,7 @@ export async function resolveSingleDomain(domain: string): Promise<ResolvedDomai
 }
 
 /**
- * 2. ENRIQUECIMIENTO WEB (Atómico)
+ * 2. ENRIQUECIMIENTO WEB 
  * Valida HTTP y obtiene metadata en un solo paso.
  */
 export async function enrichWebData(host: string): Promise<WebMetadata> {
@@ -94,8 +92,8 @@ export async function enrichWebData(host: string): Promise<WebMetadata> {
 }
 
 /**
- * 3. CLASIFICADOR DE TARGET (Lógica Pura)
- * Mantiene la lógica de negocio para decidir qué hacer con el target.
+ * 3. CLASIFICADOR DE TARGET 
+ *  para decidir qué hacer con el target.
  */
 export function classifyTarget(domainData: any) {
   const cloudKeywords = [

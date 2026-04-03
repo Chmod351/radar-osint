@@ -1,9 +1,7 @@
 import { resolveTxt } from "node:dns/promises";
 import { logger } from "../../shared/errorLogger.ts";
 
-/**
- * INTERFAZ DE INTELIGENCIA DE RED
- */
+
 export interface ASNIntel {
   asn: string;
   prefix: string;
@@ -34,7 +32,7 @@ export async function getASNInfo(ip: string): Promise<ASNIntel> {
       };
     }
   } catch (e: any) {
-    // Si el error es NXDOMAIN, la IP no tiene ASN asociado (común en IPs privadas o raras)
+    // Si el error es NXDOMAIN, la IP no tiene ASN asociado 
     if (e.code !== 'ENOTFOUND') {
       logger.debug("ASN-LOOKUP", `No se encontró registro para ${ip}`);
     }
