@@ -36,6 +36,7 @@ export async function resolveSingleDomain(domain: string): Promise<ResolvedDomai
     if (!stdout.trim()) return null;
 
     const data = JSON.parse(stdout);
+    logger.debug("RESOLVER DOMAIN:",JSON.stringify(data))
     return {
       host: data.host,
       ip: data.a?.[0] || "0.0.0.0",
@@ -61,13 +62,16 @@ export async function enrichWebData(host: string): Promise<WebMetadata> {
       "-status-code",
       // "-threads",
       "-json",
-      "50",
+      // "50",
     ], {input:host, 
       timeout: 20000 });
 
     if (!stdout.trim()) throw new Error("No web response");
 
     const data = JSON.parse(stdout);
+
+    logger.debug("ENRICHWEBDATA:",JSON.stringify(data))
+    
     
     return {
       url: data.url || `http://${host}`,
@@ -98,7 +102,7 @@ export function classifyTarget(domainData: any) {
     "amazon", "google", "microsoft", "cloudflare", "akamai",
     "fastly", "ovh", "digitalocean", "linode", "vercel", "github"
   ];
-
+ 
   const asnOwner = domainData.asn_owner?.toLowerCase() || domainData.asn?.toLowerCase() || "";
   const isCloud = cloudKeywords.some(key => asnOwner.includes(key));
 
