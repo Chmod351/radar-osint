@@ -1,8 +1,8 @@
+import { logger } from "../../shared/errorLogger.ts"; 
 import { httpPhaseAndVulnerabilityPhaseMerger } from "./vulnScanner.ts";
 
 export async function analysisPhase(webAssets: any[]) {
-  console.log("iniciando fase 4");
-
+logger.info("PHASE 4:", "Fase 4 iniciada...")
   // USAMOS MAP + PROMISE.ALL PARA PROCESAR TODO EL ARRAY
   const finalReport = await Promise.all(
     webAssets.map(async (asset) => {
@@ -11,6 +11,7 @@ export async function analysisPhase(webAssets: any[]) {
     })
   );
 
-  console.log("-- FASE 4 TERMINADA --");
-  return finalReport; // ESTO garantiza que sea un Array para el dashboard
+ 
+  logger.info("PHASE 4:",  "Fase 4 terminada ")
+  return finalReport; 
 }

@@ -29,7 +29,7 @@ export async function withRetry<T>(
     } catch (error: any) {
       lastError = error;
 
-      // PUNTO CIEGO: No reintentar si el error es definitivo (NXDOMAIN / ENOTFOUND)
+      //  No reintentar si el error es definitivo (NXDOMAIN / ENOTFOUND)
       if (error.code === 'ENOTFOUND' || error.code === 'EAI_NONAME') {
         throw error;
       }
@@ -39,7 +39,6 @@ export async function withRetry<T>(
 
       logger.debug("RESILIENCE", `Fallo en ${taskName} (intento ${i + 1}/${retries}). Reintentando en ${currentDelay}ms...`);
       
-      // Usamos el sleep nativo de Bun para máxima eficiencia
       await Bun.sleep(currentDelay);
       
       // Aumentamos el delay exponencialmente

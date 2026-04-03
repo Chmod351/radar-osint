@@ -99,7 +99,7 @@ async function analyzeHeaders(url: string) {
 }
 
 /**
- * Orquestador Atómico de Inteligencia Web.
+ * Orquestador de Inteligencia Web.
  * Ejecuta headers y WhatWeb en paralelo para maximizar throughput.
  */
 export async function getWebIntel(url: string) {
