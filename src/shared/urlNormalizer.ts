@@ -1,7 +1,3 @@
-/**
- * Limpia cualquier entrada (URL, Host con basura, etc.) 
- * para dejar solo el Host puro.
- */
 export function normalizeTarget(input: string): string {
   if (!input) return "";
 

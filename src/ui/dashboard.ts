@@ -1,5 +1,5 @@
 import { criticalKeywords,noise } from "../shared/utils.ts";
-import type { Technology } from "../phases/03-http/serverFingerprinting.ts";
+import type { Technology } from "../phases/03-http/client.ts";
 import type { AnalyzedTarget, HttpIntel } from "../shared/types";
 
 const REAL_TECH_FILTER = (t: Technology) => {
