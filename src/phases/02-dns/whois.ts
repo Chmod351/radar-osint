@@ -1,6 +1,5 @@
 import { execa } from "execa";
 import { logger } from "../../shared/errorLogger.ts";
-import { normalizeTarget } from "../../shared/urlNormalizer.ts";
 
 /**
  * CACHÉ GLOBAL DE WHOIS
