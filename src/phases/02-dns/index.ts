@@ -11,20 +11,16 @@ import type { AnalyzedTarget } from "../../shared/types.ts";
  * Se encarga de transformar un string (subdominio) en un objeto analizado completo.
  */
 async function processTarget(subdomain: string): Promise<AnalyzedTarget | null> {
-  console.log(subdomain,".----------> target")
   try {
     // 1. RESOLUCIÓN DNS (Paso crítico inicial)
     // Usamos retry porque un fallo DNS temporal mataría el target sin razón.
-    logger.debug("fase 2", "iniciando .....")
     const resolved = await withRetry(`DNS:${subdomain}`, () => resolveSingleDomain(subdomain));
-    console.log(resolved,"resolvedddddd")
     if (!resolved || resolved.ip === "0.0.0.0") {
       return null; // Si no hay IP, no hay nada que escanear
     }
 
     // 2. ENRIQUECIMIENTO EN PARALELO (ASN y WEB)
     // Ejecutamos ASN y HTTP al mismo tiempo para ganar velocidad.
-    logger.debug("iniciando servicio paralelo", " asninfo y webinfo")
     const [asnInfo, webInfo] = await Promise.all([
       withRetry(`ASN:${resolved.ip}`, () => getASNInfo(resolved.ip)),
       withRetry(`WEB:${subdomain}`, () => enrichWebData(subdomain))
@@ -37,15 +33,12 @@ async function processTarget(subdomain: string): Promise<AnalyzedTarget | null> 
       ...webInfo,
       asn_owner: asnInfo.prefix // Adaptación para el clasificador
     };
-logger.debug("iniciando en analyzed", "pasando a clasificador")
     const analyzed = classifyTarget(baseData) as AnalyzedTarget;
-console.log(analyzed)
     // 4. WHOIS TÁCTICO (Solo si es un target de interés)
     // El Whois es lento, solo lo disparamos si el clasificador dice que es SCAN_READY
     if (analyzed.action === "SCAN_READY") {
       try {
         // getWhoisIntel ya maneja su propia caché interna por root domain
-        logger.debug("WHOIS", "disparando whois")
         analyzed.whois = await withRetry(`Whois:${subdomain}`, () => getWhoisIntel(subdomain));
       } catch (e) {
         logger.debug("WHOIS", `Fallo definitivo en Whois para ${subdomain} tras reintentos.`);
