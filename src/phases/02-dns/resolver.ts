@@ -36,7 +36,6 @@ export async function resolveSingleDomain(domain: string): Promise<ResolvedDomai
     if (!stdout.trim()) return null;
 
     const data = JSON.parse(stdout);
-    logger.debug("RESOLVE SINGLE DOMAIN", `success: ${data}`)
     return {
       host: data.host,
       ip: data.a?.[0] || "0.0.0.0",
