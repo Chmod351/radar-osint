@@ -7,7 +7,6 @@ import { logger } from "../../shared/errorLogger.ts";
  * durante todo el streaming del Radar.
  */
 const whoisCache = new Map<string, any>();
-console.log(whoisCache)
 /**
  * 1. OBTENER DOMINIO RAÍZ
  * 

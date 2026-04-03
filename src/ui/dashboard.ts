@@ -92,7 +92,6 @@ export function dashboard(finalReport: AnalyzedTarget[]): void {
     };
   });
 
-  console.log(`\n[🏁] RADAR FINALIZADO: ${finalReport.length} objetivos.`);
   console.table(tableFriendlyReport.slice(0,25));
 
 }
