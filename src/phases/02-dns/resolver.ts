@@ -15,10 +15,15 @@ export interface WebMetadata {
   cdn: string;
 }
 
+
+
+
 /**
  * 1. RESOLVER DOMINIO 
  * Recibe UN dominio, devuelve host e ip.
  */
+
+const globalFingerprints= new Set<string>();
 export async function resolveSingleDomain(domain: string): Promise<ResolvedDomain | null> {
   try {
     // Ejecución directa para un solo target.
@@ -101,8 +106,21 @@ export function classifyTarget(domainData: any) {
     "fastly", "ovh", "digitalocean", "linode", "vercel", "github"
   ];
  
+  const fingerprint=`${domainData.ip}_${domainData.status_code}_${domainData.title}`
   const asnOwner = domainData.asn_owner?.toLowerCase() || domainData.asn?.toLowerCase() || "";
   const isCloud = cloudKeywords.some(key => asnOwner.includes(key));
+
+  if (globalFingerprints.has(fingerprint)) {
+    return{
+     ...domainData,
+     priority:"LOW",
+     infra_type:isCloud?"Cloud/CDN":"P/Self-H",
+     action:"DUPLICATE_ALIAS",
+     whois:undefined,
+     vulnerabilities: [],
+    }
+    
+  }
 
   return {
     ...domainData,
