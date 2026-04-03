@@ -2,9 +2,7 @@ import { execa } from "execa";
 import { subfinder, assetfinder } from "../../shared/utils.ts";
 import readline from "readline";
 import { logger } from "../../shared/errorLogger.ts";
-/**
- * Ejecuta un comando y emite cada línea de STDOUT como un evento del stream.
- */
+
 async function* runSubdomainStream(cmd: string, args: string[]): AsyncIterable<string> {
 
   logger.debug("RUN-SUBDOMAINS-STREAM", `arg: ${args} cmd:${cmd}`)
@@ -19,10 +17,23 @@ async function* runSubdomainStream(cmd: string, args: string[]): AsyncIterable<s
       terminal: false
     });
 
-    for await (const line of rl) {
-      const cleanLine = line.trim().toLowerCase();
-      if (cleanLine) yield cleanLine;
-    }
+for await (const line of rl) {
+  let cleanLine = line.trim().toLowerCase();
+  
+  // 1. Limpieza de basura Unicode común (u003e, etc)
+  cleanLine = cleanLine.replace(/u003e|u003c/g, ""); 
+
+  // 2. Filtro de "Solo caracteres válidos"
+  // Un subdominio real solo tiene [a-z0-9.-]
+  // Si después de limpiar sigue teniendo basura, lo descartamos.
+  if (/^[a-z0-9.-]+$/.test(cleanLine)) {
+    yield cleanLine;
+  }
+}
+   /*  for await (const line of rl) { */
+      /* const cleanLine = line.trim().toLowerCase(); */
+      /* if (cleanLine) yield cleanLine; */
+    /* } */
 
     await childProcess; 
   } catch (e) {
