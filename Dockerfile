@@ -10,7 +10,8 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     dnsutils \
     nmap \
     whatweb \
-    exploitdb \    
+    exploitdb \
+    whois\
     ruby-full \
     build-essential \
     subfinder \
@@ -30,7 +31,7 @@ RUN bun install
 
 COPY . .
 
-RUN chmod +x ./modules/lowNoise.ts
+RUN chmod +x ./src/core/orchestrator.ts
 
 ENTRYPOINT ["/bin/bash", "-c"]
 CMD ["./recon.sh"]
