@@ -27,7 +27,7 @@ export function getRootDomain(host: string): string {
 }
 
 /**
- * 2. PARSER AGNÓSTICO (Tu motor original)
+ * 2. PARSER AGNÓSTICO 
  * 
 * */
 function parseWhoisAgnostic(rawText: string) {
@@ -51,8 +51,8 @@ function parseWhoisAgnostic(rawText: string) {
 }
 
 /**
- * 3. NORMALIZADOR TÁCTICO
- */
+ * 3. NORMALIZADOR 
+* */
 function normalizeWhois(rawText: string) {
   const data = parseWhoisAgnostic(rawText);
   const get = (k: string) => Array.isArray(data[k]) ? data[k][0] : data[k];
@@ -73,8 +73,8 @@ function normalizeWhois(rawText: string) {
 }
 
 /**
- * 4. FUNCIÓN ATÓMICA PRINCIPAL
- * Esta es la que llamará el Orquestador.
+ * 4. FUNCIÓN ATÓMICA 
+ * * .
  */
 export async function getWhoisIntel(host: string): Promise<any | null> {
   const root = getRootDomain(host);
@@ -96,7 +96,7 @@ try {
 
     if (!stdout || stdout.includes("No match for")) return null;
 
-    const parsed = parseWhoisAgnostic(stdout);
+    const parsed = normalizeWhois(stdout);
     whoisCache.set(root, parsed);
     return parsed;
   } catch (error: any) {
