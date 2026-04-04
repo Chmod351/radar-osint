@@ -51,6 +51,11 @@ export interface AnalyzedTarget {
   // Datos de Fase 3 (Opcionales hasta que pase por la fase)
   http_intel?: HttpIntel;
   http_stack?: Technology[];
+  open_ports?:[{
+port:number; 
+protocol:string; 
+service:string;
+  }]
   
   // Datos de Fase 4
   vulnerabilities?: SearchSploitResult[]
