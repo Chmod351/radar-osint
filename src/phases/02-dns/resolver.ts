@@ -70,7 +70,6 @@ export async function enrichWebData(host: string): Promise<WebMetadata> {
 
     const data = JSON.parse(stdout);
 
-    logger.debug("ENRICHWEBDATA:",JSON.stringify(data))
     
     
     return {
