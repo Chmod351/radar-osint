@@ -50,6 +50,7 @@ export function dashboard(finalReport: AnalyzedTarget[]): void {
       tech: techSummary.substring(0,20),
       cdn: item.cdn, 
       type:item.infra_type,
+      ip:item.ip,
     };
   });
 
