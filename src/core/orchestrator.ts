@@ -5,6 +5,7 @@ import { OP_DIR, TARGET } from "../shared/utils.ts";
 import { logger } from "../shared/errorLogger.ts";
 import { dashboard } from "../ui/dashboard.ts";
 import type { AnalyzedTarget } from "../shared/types.ts";
+import { normalizeTarget } from "../shared/helper.ts";
 
 export class Orchestrator {
   // por defecto 15
@@ -59,10 +60,10 @@ export class Orchestrator {
     const path = `${OP_DIR}/${TARGET}.json`;
 
     logger.warn(`[💾] Guardando ${finalResults.length} objetivos en ${path}...`, "<----");
-    const content = JSON.stringify(finalResults, null, 2);
 
-    await Bun.write(Bun.file(path), content);
-    return dashboard(finalResults);
+    const normalizedFinalData = finalResults.map(target => normalizeTarget(target));
+    await Bun.write(Bun.file(path), JSON.stringify(normalizedFinalData,null,2));
+    return dashboard(normalizedFinalData);
   }
 }
 async function main(target:string) {
@@ -72,7 +73,7 @@ async function main(target:string) {
     // ACÁ ES DONDE SUCEDE LA MAGIA
     await orchestrator.start(target);
   } catch (error) {
-    console.error("💥 Fallo crítico en el arranque:", error);
+    logger.error("ORQUESTADOR:",`ERROR AL INTENTAR EJECUTAR EL ORQUESTADOR ${error}`);
     process.exit(1);
   }
 }
