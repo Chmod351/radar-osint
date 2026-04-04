@@ -26,20 +26,22 @@ export class Orchestrator {
         try {
           // LLAMADA ATÓMICA 1: DNS/ASN/WHOIS
           const analyzed = await dnsPhaseStream(sub);
+          let normalized:AnalyzedTarget=normalizeTarget(analyzed);
 
-          let normalized=normalizeTarget(analyzed)
-          if (analyzed) {
-            if (analyzed.action !== "DUPLICATE_ALIAS") {
+
+
+          if (normalized) {
+            if (normalized.action !== "DUPLICATE_ALIAS" &&  normalized.action !=="SCAN_FAILED") {
             // LLAMADA ATÓMICA 2: HTTP/NMAP
-              const fullyEnriched = await fingerprintingPhase(analyzed);
+              const fullyEnriched = await fingerprintingPhase(normalized);
               if (fullyEnriched) {
-                normalized=normalizeTarget(fullyEnriched)
+                normalized=normalizeTarget(fullyEnriched);
                 finalResults.push(normalized);
-                logger.info("ORCHESTRATOR", `Target completado: ${sub}`);
+                logger.info("ORCHESTADOR", `Target completado: ${sub}`);
               }
             } else {
-              finalResults.push(analyzed);
-              logger.info("ORCHESTRATOR", `Omitiendo escaneo profundo para : ${sub}`);
+              finalResults.push(normalized);
+              logger.info("ORCHESTADOR", `Omitiendo escaneo profundo para : ${sub}`);
             }
           }
         } catch (e:unknown) {
