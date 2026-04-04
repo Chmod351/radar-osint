@@ -1,21 +1,21 @@
 import { reconPhase } from "../phases/01-recon/index-recon.ts";
 import { dnsPhaseStream } from "../phases/02-dns/index-dns.ts";
 import { fingerprintingPhase } from "../phases/03-http/index-http.ts";
-import { OP_DIR, RESULTS_BASE, TARGET } from "../shared/utils.ts";
+import { OP_DIR, TARGET } from "../shared/utils.ts";
 import { logger } from "../shared/errorLogger.ts";
 import { dashboard } from "../ui/dashboard.ts";
 
 export class Orchestrator {
   // por defecto 15
-  private concurrencyLimit =  2
+  private concurrencyLimit =  2;
 
   async start(target: string) {
     const finalResults: any[] = [];
     const activeWorkers = new Set<Promise<void>>();
-logger.info("ORQUESTADOR", "iniciando....")
+logger.info("ORQUESTADOR", "iniciando....");
     // Fase 1: Sigue siendo un Stream (la fuente)
     const subdomainStream = reconPhase(target);
-console.log(subdomainStream)
+console.log(subdomainStream);
     for await (const sub of subdomainStream) {
       if (activeWorkers.size >= this.concurrencyLimit) {
         await Promise.race(activeWorkers);
@@ -37,7 +37,7 @@ console.log(subdomainStream)
                    logger.info("ORCHESTRATOR", `Target completado: ${sub}`);
                 }   
             }else{
-                finalResults.push(analyzed)
+                finalResults.push(analyzed);
                   logger.info("ORCHESTRATOR", `Omitiendo escaneo profundo para : ${sub}`);
 
             }
@@ -53,7 +53,7 @@ console.log(subdomainStream)
     }
 
     await Promise.all(activeWorkers);
-    console.log(finalResults)
+    console.log(finalResults);
     console.log(`\n[🏁] ESCANEO FINALIZADO. Objetivos: ${finalResults.length}`);
         const path = `${OP_DIR}/${TARGET}.json`;
 
