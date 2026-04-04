@@ -37,9 +37,9 @@ function parseNmapOutput(stdout: string): OpenPort[] {
 
   for (const line of lines) {
     const match = line.match(/^(\d+)\/(tcp|udp)\s+open\s+(.+)$/);
-    if (match) {
+    if (match ) {
       ports.push({
-        port: parseInt(match[1], 10)||"",
+        port: parseInt(match[1], 10)||undefined,
         protocol: match[2] || "",
         service: match[3].trim() || "",
       });
@@ -77,10 +77,10 @@ function parseNmapOutput(stdout: string): OpenPort[] {
     return discoveredPorts;
   } catch (e: any) {
     // Si nmap no está instalado o falla la red
-    if (e.code === 'ENOENT') {
+    if (e.code === "ENOENT") {
       logger.error("NMAP", "Binario 'nmap' no encontrado en el sistema.");
     } else {
-      logger.debug("NMAP", `Fallo escaneo en ${target}: ${e.message}`);
+      logger.error("NMAP", `Fallo escaneo en ${target}: ${e.message}`);
     }
     return [];
   }

@@ -14,9 +14,6 @@ export async function fingerprintingPhase(target: AnalyzedTarget): Promise<Analy
       await scanPortsSafe(host)
     ]);
     
-    logger.debug("HTTPDATA", JSON.stringify(httpData))
-    logger.debug("OPENPORTS", JSON.stringify(openPorts))
-    logger.debug("TARGET", JSON.stringify(target))
     return {
       ...target,
       http_intel: httpData.http_intel,

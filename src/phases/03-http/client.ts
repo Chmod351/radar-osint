@@ -37,7 +37,7 @@ export class WhatWebService {
       return this.parsePlugins(parsed[0]?.plugins || {});
 
     } catch (error: any) {
-      logger.debug("WHATWEB", `Fallo en escaneo de ${target}: ${error.message}`);
+      logger.error("WHATWEB", `Fallo en escaneo de ${target}: ${error.message}`);
       try { await unlink(tempFile); } catch { }
       return [];
     }
@@ -94,6 +94,7 @@ async function analyzeHeaders(url: string) {
       cookies: response.headers.get("set-cookie") ? "Present" : "None"
     };
   } catch (e: any) {
+    logger.error("HEADERS", `${e}`);
     return { error: "Unreachable", status: 0 };
   }
 }
