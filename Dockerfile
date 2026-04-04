@@ -2,35 +2,36 @@ FROM kalilinux/kali-last-release
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-
-RUN echo "deb http://http.kali.org/kali kali-rolling main contrib non-free non-free-firmware" > /etc/apt/sources.list
-
-RUN apt-get update && apt-get upgrade -y
-
+# Repositorios y actualizaciones
 RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     bash \
     curl \
     jq \
-    sed \
-    gawk \
     dnsutils \
-    whois \
     nmap \
     whatweb \
     exploitdb \
-    # Herramientas de ProjectDiscovery (Nativas de Kali)
+    whois\
+    ruby-full \
+    build-essential \
     subfinder \
     httpx-toolkit \
     dnsx \
     assetfinder \
     && rm -rf /var/lib/apt/lists/*
 
+# --- INSTALACIÓN DE BUN ---
+RUN curl -fsSL https://bun.sh/install | bash
+ENV PATH="/root/.bun/bin:${PATH}"
+
 WORKDIR /app
+
+COPY package.json bun.lockb* ./
+RUN bun install
 
 COPY . .
 
-RUN find . -name "*.sh" -exec chmod +x {} +
+RUN chmod +x ./src/core/orchestrator.ts
 
-USER root
-
-ENTRYPOINT ["./recon.sh"]
+ENTRYPOINT ["/bin/bash", "-c"]
+CMD ["./recon.sh"]
