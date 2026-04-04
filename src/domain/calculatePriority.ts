@@ -6,12 +6,12 @@ import { scoreWeakness } from "./calculateWeakness";
 
 export function calculatePriority(item: AnalyzedTarget): "🟣 CRITICAL" | "🔴 HIGH" | "🟡 MEDIUM" | "⚪ LOW" {
   // 0. Los muertos no son prioridad
- const isLive=scoreLifeOfServer(item)
- const exposure=scoreExposure(item)
-const impact =scoreImpact(item)
-const weakness = scoreWeakness(item)
+ const isLive=scoreLifeOfServer(item);
+ const exposure=scoreExposure(item);
+const impact =scoreImpact(item);
+const weakness = scoreWeakness(item);
 
- const total = isLive + exposure + impact + weakness 
+ const total = isLive + exposure + impact + weakness; 
 
   // Clasificación final
  
