@@ -39,7 +39,7 @@ function parseNmapOutput(stdout: string): OpenPort[] {
     const match = line.match(/^(\d+)\/(tcp|udp)\s+open\s+(.+)$/);
     if (match ) {
       ports.push({
-        port: parseInt(match[1], 10)||undefined,
+        port: parseInt(match[1], 10)||0,
         protocol: match[2] || "",
         service: match[3].trim() || "",
       });
