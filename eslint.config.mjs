@@ -24,9 +24,15 @@ export default [
       "@typescript-eslint": typescriptEslint,
     },
     rules: {
+      "indent": ["error", 2],
       "semi": ["error", "always"],
       "quotes": ["error", "double"],
       "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/no-explicit-any": "warn",
+      "object-curly-spacing": ["error", "always"],
+      "array-bracket-spacing": ["error", "never"],
+      "keyword-spacing": ["error", { "before": true, "after": true }],
+      "comma-dangle": ["error", "always-multiline"],
     },
   },
 ];
