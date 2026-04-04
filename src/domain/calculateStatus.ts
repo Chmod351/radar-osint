@@ -10,7 +10,7 @@ export function calculateStatus(item:AnalyzedTarget){
 }
 
 
-export function ServerInfo(item: AnalyzedTarget, intel: Partial<HttpIntel>, stack: Technology[]) {
+export function getServerInfo(item: AnalyzedTarget, intel: Partial<HttpIntel>, stack: Technology[]) {
   const serverInfo = item.webserver && item.webserver !== "N/A"
     ? item.webserver
     : (intel.server || "???");
@@ -23,6 +23,7 @@ export function ServerInfo(item: AnalyzedTarget, intel: Partial<HttpIntel>, stac
   const techSummary = stack.length > 0
     ? stack.map((t: Technology) => t.name).join(", ").slice(0, 30)
     : "--";
+
 
   return {
     serverInfo,
