@@ -1,19 +1,36 @@
 import { execa } from "execa";
 import { logger } from "../../shared/errorLogger.ts";
+import type { OpenPort } from "../../shared/types.ts";
 
-/**
- * Representa un puerto abierto detectado.
- */
-export interface OpenPort {
-  port: number;
-  service: string;
-  protocol: string;
-}
 
 /**
  * Parser minimalista para la salida de Nmap (formato normal).
  * Busca líneas como: "80/tcp open  http"
  */
+
+const MAX_NMAP_CONCURRENCY = 1;
+const active: Promise<any>[] = []; 
+
+// EVITA QUE SE QUEME EL PC
+async function runWithNmapLimit<T>(fn: () => Promise<T>): Promise<T> {
+  while (active.length >= MAX_NMAP_CONCURRENCY) {
+    await Promise.race(active);
+  }
+
+  const job = fn();
+  active.push(job);
+
+  try {
+    return await job;
+  } finally {
+    const i = active.indexOf(job);
+    if (i > -1) active.splice(i, 1);
+  }
+}
+
+
+
+
 function parseNmapOutput(stdout: string): OpenPort[] {
   const ports: OpenPort[] = [];
   const lines = stdout.split("\n");
@@ -34,7 +51,7 @@ function parseNmapOutput(stdout: string): OpenPort[] {
 /**
  * Ejecuta un escaneo de puertos rápido y no intrusivo.
  */
-export async function scanPorts(target: string): Promise<OpenPort[]> {
+  async function scanPorts(target: string): Promise<OpenPort[]> {
   try {
     logger.debug("NMAP", `Iniciando escaneo rápido para ${target}`);
     
@@ -45,10 +62,7 @@ export async function scanPorts(target: string): Promise<OpenPort[]> {
      * -T4: Agresividad de tiempo (nivel 4 de 5, ideal para escaneos rápidos).
      * -n: No hace resolución DNS inversa (ya la hicimos nosotros).
      */
-    const { stdout } = await execa("nmap", ["-F", "--open", 
-                                   // "-T4",
-    "T3",
-    "-n", target], { 
+    const { stdout } = await execa("nmap", ["-F", "--open", "-T4","-n", target], { 
       timeout: 45000 // 45 segundos máximo por host
     });
 
@@ -71,3 +85,6 @@ export async function scanPorts(target: string): Promise<OpenPort[]> {
     return [];
   }
 }
+
+export const scanPortsSafe = (target: string) =>
+  runWithNmapLimit(() => scanPorts(target));

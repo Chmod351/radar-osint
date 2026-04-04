@@ -1,22 +1,17 @@
 import { getWebIntel } from "./client.ts";
-import { scanPorts } from "./portsScan.ts";
+import {  scanPortsSafe } from "./portsScan.ts";
 import { logger } from "../../shared/errorLogger.ts";
 import type { AnalyzedTarget } from "../../shared/types";
 
-/**
- * CONFIGURACIÓN DE RENDIMIENTO
- * MAX_CONCURRENT: Cuántos hosts procesamos en paralelo. 
- * No queremos saturar la red ni que nos bloqueen por ruido excesivo.
- */
 
 export async function fingerprintingPhase(target: AnalyzedTarget): Promise<AnalyzedTarget> {
   const host = target.host;
 
   try {
-    // Disparamos las 3 consultas en paralelo para este host específico
+    // Disparamos las 2 consultas en paralelo para este host específico
     const [httpData, openPorts] = await Promise.all([
       getWebIntel(target.url),
-      scanPorts(host)
+      await scanPortsSafe(host)
     ]);
     
     logger.debug("HTTPDATA", JSON.stringify(httpData))
