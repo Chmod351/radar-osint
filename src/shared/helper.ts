@@ -45,7 +45,7 @@ export function normalizeTarget(raw: AnalyzedTarget|null): AnalyzedTarget {
       asn: "N/A",
       asn_owner: "N/A",
       country: "N/A",
-      whois_raw: "N/A"
+      whois_raw: "N/A",
     };
   }
 
