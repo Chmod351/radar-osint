@@ -8,6 +8,15 @@ export interface Technology {
   version: string;
 }
 
+interface WhatWebPluginDetails {
+  version?: string[];
+  string?: string[];
+  module?: string[];
+  os?: string[]; 
+}
+
+type WhatWebRawResponse = Record<string, WhatWebPluginDetails>;
+
 /**
  * Sensor WhatWeb: Fingerprinting profundo de tecnologías.
  * Se encarga de la ejecución binaria y el filtrado de ruido.
@@ -31,10 +40,13 @@ export class WhatWebService {
       const rawContent = await readFile(tempFile, "utf-8");
       await unlink(tempFile);
 
+
       if (!rawContent || rawContent.trim() === "") return [];
 
       const parsed = JSON.parse(rawContent);
-      return this.parsePlugins(parsed[0]?.plugins || {});
+      if (!Array.isArray(parsed) || parsed.length === 0) return []; 
+      const rawPlugins = (parsed[0].plugins || {}) as WhatWebRawResponse;
+      return this.parsePlugins(rawPlugins);
 
     } catch (error: unknown) {
       logger.error("WHATWEB", getErrorMessage(error));
@@ -45,16 +57,25 @@ export class WhatWebService {
     }
   }
 
-  private parsePlugins(plugins: any): Technology[] {
+private parsePlugins(plugins: WhatWebRawResponse): Technology[] {
     return Object.entries(plugins)
       .filter(([name]) => !this.noise.includes(name))
-      .map(([name, details]: [string, any]) => ({
-        name,
-        version: details.version?.[0] || details.string?.[0] || "unknown",
-      }))
+      .map(([name, details]): Technology => {
+        // Buscamos la versión en orden de probabilidad
+        const version = 
+          details.version?.[0] || 
+          details.string?.[0] || 
+          details.module?.[0] || 
+          "unknown";
+
+        return {
+          name,
+          version,
+        };
+      })
       .filter(t => 
         t.version !== "unknown" || 
-        ["Nginx", "Apache", "PHP", "WordPress", "Docker", "Cloudflare", "Laravel"].includes(t.name),
+        ["Nginx", "Apache", "PHP", "WordPress", "Docker", "Cloudflare", "Laravel"].includes(t.name)
       );
   }
 }
