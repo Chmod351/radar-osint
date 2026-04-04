@@ -10,6 +10,7 @@ import { getErrorMessage } from "../../shared/utils.ts";
  */
 const whoisCache = new Map<string, WhoisIntel>();
 
+type WhoisRawData = Record<string, string | string[]>;
 export const emptyWhois: WhoisIntel = {
   registrar: "N/A",
   creationDate: "N/A",
@@ -45,24 +46,28 @@ export function getRootDomain(host: string): string {
  * 2. PARSER AGNÓSTICO 
  * 
 * */
-function parseWhoisAgnostic(rawText: string) {
+function parseWhoisAgnostic(rawText: string): WhoisRawData {
   const lines = rawText.split("\n");
-  const json: any = {};
-  for (const line of lines) {
-    if (line.startsWith("%") || line.startsWith("#") || !line.includes(":")) continue;
-    const [rawKey, ...valueParts] = line.split(":");
-    if (rawKey) {
-      const key = rawKey.trim().toLowerCase().replace(/\s+/g, "_");
-      const value = valueParts.join(":").trim();
-      if (!value) continue;
+  const json: WhoisRawData = {};
 
-      if (json[key]) {
-        json[key] = Array.isArray(json[key]) ? [...json[key], value] : [json[key], value];
-      } else {
-        json[key] = value;
-      }  
-    } continue;
-    
+  for (const line of lines) {
+    // Limpieza de comentarios y líneas sin ":"
+    if (line.startsWith("%") || line.startsWith("#") || !line.includes(":")) continue;
+
+    const [rawKey, ...valueParts] = line.split(":");
+    if (!rawKey) continue;
+
+    const key = rawKey.trim().toLowerCase().replace(/\s+/g, "_");
+    const value = valueParts.join(":").trim();
+    if (!value) continue;
+
+    const existing = json[key];
+    if (existing) {
+      // Si ya existe, convertimos a array o agregamos al existente
+      json[key] = Array.isArray(existing) ? [...existing, value] : [existing, value];
+    } else {
+      json[key] = value;
+    }
   }
   return json;
 }
@@ -70,12 +75,20 @@ function parseWhoisAgnostic(rawText: string) {
 /**
  * 3. NORMALIZADOR 
 * */
-export function normalizeWhois(rawText: string) {
+export function normalizeWhois(rawText: string): WhoisIntel {
   const data = parseWhoisAgnostic(rawText);
-  const get = (k: string) => Array.isArray(data[k]) ? data[k][0] : data[k];
-  const getAll = (k: string) => {
+
+  // Helper para obtener el primer valor (string)
+  const get = (k: string): string | undefined => {
     const val = data[k];
-    return val ? (Array.isArray(val) ? val : [val]) : [];
+    return Array.isArray(val) ? val[0] : val;
+  };
+
+  // Helper para obtener todos los valores (array)
+  const getAll = (k: string): string[] => {
+    const val = data[k];
+    if (!val) return [];
+    return Array.isArray(val) ? val : [val];
   };
 
   return {
@@ -88,7 +101,6 @@ export function normalizeWhois(rawText: string) {
     raw: rawText.slice(0, 500),
   };
 }
-
 /**
  * 4. FUNCIÓN ATÓMICA 
  * * .
