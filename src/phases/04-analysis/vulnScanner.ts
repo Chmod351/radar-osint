@@ -32,8 +32,8 @@ const match = detectedServer.match(/^([a-zA-Z0-9\-_]+)\/?([0-9.]*)/);
        return title.includes(family);
     });
   } catch (e) { 
-    const err= `${detectedServer} FALLÓ EL RESOLVER ${e}`
-     logger.error("FINDEXPLOITS", err )
+    const err= `${detectedServer} FALLÓ EL RESOLVER ${e}`;
+     logger.error("FINDEXPLOITS", err );
     return []; 
   }
 }
