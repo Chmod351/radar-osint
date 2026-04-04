@@ -2,6 +2,7 @@ import { noise } from "../shared/utils.ts";
 import type { Technology } from "../phases/03-http/client.ts";
 import type { AnalyzedTarget } from "../shared/types";
 import { calculatePriority } from "../domain/calculatePriority.ts";
+import { calculateStatus } from "../domain/calculateStatus.ts";
 
 const REAL_TECH_FILTER = (t: Technology) => {
  
