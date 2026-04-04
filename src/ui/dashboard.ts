@@ -1,6 +1,7 @@
 import { criticalKeywords,noise } from "../shared/utils.ts";
 import type { Technology } from "../phases/03-http/client.ts";
 import type { AnalyzedTarget, HttpIntel } from "../shared/types";
+import { calculatePriority } from "../domain/calculatePriority.ts";
 
 const REAL_TECH_FILTER = (t: Technology) => {
  
@@ -10,37 +11,6 @@ const REAL_TECH_FILTER = (t: Technology) => {
 /**
  * Determina la prioridad basada en el nombre del host y el estado de red.
  */
-function calculatePriority(item: AnalyzedTarget): "🟣 CRITICAL" | "🔴 HIGH" | "🟡 MEDIUM" | "⚪ LOW" {
-  // 0. Los muertos no son prioridad
-  if (item.ip === "0.0.0.0" || item.http_intel?.error === "Unreachable") return "⚪ LOW";
-
-  let score = 0;
-
-  // 1. EL SANTO GRIAL: Puertos de Bases de Datos (Exposición masiva)
-  const dbPorts = [3306, 5432, 27017, 1521]; 
-  const hasDB = item.open_ports?.some(p => dbPorts.includes(p.port));
-  if (hasDB) score += 100; // Esto lo hace crítico instantáneamente
-
-  // 2. ACCESO REMOTO: SSH, FTP, RDP
-  const remotePorts = [21, 22, 23, 3389];
-  const hasRemote = item.open_ports?.some(p => remotePorts.includes(p.port));
-  if (hasRemote) score += 50;
-
-  // 3. INFRAESTRUCTURA PROPIA (Más jugoso que un Cloudflare)
-  if (item.infra_type === "P/Self-H") score += 20;
-
-  // 4. PALABRAS CLAVE (Lo que ya tenías)
-  if (criticalKeywords.some(key => item.host.includes(key))) score += 30;
-
-  // 5. STACK VULNERABLE (PHP es un imán de problemas en manos inexpertas)
-  if (item.http_stack?.some(s => s.name === "Cookies" && s.version === "PHPSESSID")) score += 10;
-
-  // Clasificación final
-  if (score >= 100) return "🟣 CRITICAL"; // Bases de datos expuestas
-  if (score >= 50)  return "🔴 HIGH";     // Puertos de gestión o keywords sensibles
-  if (score >= 20)  return "🟡 MEDIUM";   // Sitios vivos en infra propia
-  return "⚪ LOW";
-}
 
 
 function calculateStatus(item:AnalyzedTarget){
@@ -98,7 +68,7 @@ const sortedReport = finalReport.sort((a, b) => {
       : "--";
    
 
-    const sec = intel.security || { hsts: false };
+    const sec = intel.security  || { hsts: false };
     
     // Usamos las funciones que ya corregiste
     const realStatus = calculateStatus(item);
