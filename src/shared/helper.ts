@@ -4,6 +4,7 @@ import type { AnalyzedTarget, HttpIntel } from "./types";
 
 
 export function normalizeHttpIntel(raw:HttpIntel) {
+  if (!raw) return normalizedIntel;
   return {
     protocol:raw.protocol||"Unknown",
     status: Number(raw.status) ||0,
