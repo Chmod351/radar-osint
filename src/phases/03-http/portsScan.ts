@@ -45,7 +45,10 @@ export async function scanPorts(target: string): Promise<OpenPort[]> {
      * -T4: Agresividad de tiempo (nivel 4 de 5, ideal para escaneos rápidos).
      * -n: No hace resolución DNS inversa (ya la hicimos nosotros).
      */
-    const { stdout } = await execa("nmap", ["-F", "--open", "-T4", "-n", target], { 
+    const { stdout } = await execa("nmap", ["-F", "--open", 
+                                   // "-T4",
+    "T3",
+    "-n", target], { 
       timeout: 45000 // 45 segundos máximo por host
     });
 
