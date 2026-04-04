@@ -2,7 +2,7 @@ import { noise } from "../shared/utils.ts";
 import type { Technology } from "../phases/03-http/client.ts";
 import type { AnalyzedTarget } from "../shared/types";
 import { calculatePriority } from "../domain/calculatePriority.ts";
-import { calculateStatus, ServerInfo } from "../domain/calculateStatus.ts";
+import { calculateStatus, getServerInfo } from "../domain/calculateStatus.ts";
 
 const REAL_TECH_FILTER = (t: Technology) => {
  
@@ -36,7 +36,7 @@ export function dashboard(finalReport: AnalyzedTarget[]): void {
     const priorityLabel = calculatePriority(item);
 
     // Mandamos el stack limpio para el resumen de texto
-    const { serverInfo, techSummary } = ServerInfo(item, intel, cleanStack);
+    const { serverInfo, techSummary } = getServerInfo(item, intel, cleanStack);
 
     return {
       host: item.host.substring(0, 40), // Limitar para que no rompa la terminal
@@ -44,11 +44,12 @@ export function dashboard(finalReport: AnalyzedTarget[]): void {
       status: realStatus && item.action ==="DUPLICATE_ALIAS" ? realStatus + "/D": realStatus,
       HSTS: (intel.error === "Unreachable") ? "--" : (sec.hsts ? "✔️" : "❌"),
       server: serverInfo.slice(0, 15),
-      infra: item.infra_status || "⚪ N/A",
+      infra: item.infra_status.slice(0,4),
       ports:portsSummary,
-      app: item.app_status || "✅", 
+      app: item.app_status, 
       tech: techSummary.substring(0,20),
       cdn: item.cdn, 
+      type:item.infra_type,
     };
   });
 
