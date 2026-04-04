@@ -1,12 +1,13 @@
 import { reconPhase } from "../phases/01-recon/index-recon.ts";
 import { dnsPhaseStream } from "../phases/02-dns/index-dns.ts";
 import { fingerprintingPhase } from "../phases/03-http/index-http.ts";
-import { TARGET } from "../shared/utils.ts";
+import { OP_DIR, RESULTS_BASE, TARGET } from "../shared/utils.ts";
 import { logger } from "../shared/errorLogger.ts";
 import { dashboard } from "../ui/dashboard.ts";
 
 export class Orchestrator {
-  private concurrencyLimit = 15;
+  // por defecto 15
+  private concurrencyLimit =  2
 
   async start(target: string) {
     const finalResults: any[] = [];
@@ -54,7 +55,13 @@ console.log(subdomainStream)
     await Promise.all(activeWorkers);
     console.log(finalResults)
     console.log(`\n[🏁] ESCANEO FINALIZADO. Objetivos: ${finalResults.length}`);
-    return dashboard(finalResults);
+        const path = `${OP_DIR}/${TARGET}.json`;
+
+        logger.warn(`[💾] Guardando ${finalResults.length} objetivos en ${path}...`, "<----");
+        const content = JSON.stringify(finalResults, null, 2);
+
+   await Bun.write(Bun.file(path), content);
+   return dashboard(finalResults);
   }
 }
 async function main(target:string) {
