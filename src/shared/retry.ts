@@ -19,7 +19,7 @@ interface SystemError extends Error {
  */
 
 function isSystemError(error: unknown): error is SystemError {
-  return error instanceof Error && 'code' in error;
+  return error instanceof Error && "code" in error;
 }
 
 export async function withRetry<T>(
@@ -29,7 +29,7 @@ export async function withRetry<T>(
 ): Promise<T> {
   const { retries = 3, delay = 1000, factor = 2 } = options;
   
-  let lastError: any;
+  let lastError: unknown;
   let currentDelay = delay;
 
   for (let i = 0; i < retries; i++) {
