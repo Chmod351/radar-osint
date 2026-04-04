@@ -32,17 +32,17 @@ function isOutdated(fp: Fingerprint): boolean {
   const v = fp.version.split(".").map(Number);
 
   switch (fp.product) {
-    case "apache":
-      return v[0] === 2 && v[1] === 4 && v[2] < 50;
+  case "apache":
+    return v[0] === 2 && v[1] === 4 && v[2] < 50;
 
-    case "nginx":
-      return v[0] === 1 && v[1] < 20;
+  case "nginx":
+    return v[0] === 1 && v[1] < 20;
 
-    case "iis":
-      return v[0] < 10;
+  case "iis":
+    return v[0] < 10;
 
-    default:
-      return false;
+  default:
+    return false;
   }
 }
 

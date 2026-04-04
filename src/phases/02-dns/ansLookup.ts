@@ -28,7 +28,7 @@ export async function getASNInfo(ip: string): Promise<ASNIntel> {
       return {
         asn: parts[0] ? `AS${parts[0]}` : "AS_UNKNOWN",
         prefix: parts[1] || "Unknown",
-        country: parts[2] || "Unknown"
+        country: parts[2] || "Unknown",
       };
     }
   } catch (e: any) {

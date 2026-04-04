@@ -3,20 +3,20 @@ import type { AnalyzedTarget, HttpIntel } from "./types";
 
 
 function normalizeHttpIntel(raw:HttpIntel) {
- return {
-protocol:raw.protocol||"Unknown",
-status: Number(raw.status) ||0,
-security:{
+  return {
+    protocol:raw.protocol||"Unknown",
+    status: Number(raw.status) ||0,
+    security:{
       hsts: Boolean(raw.security?.hsts),
       csp: Boolean(raw.security?.csp),
       xfo: Boolean(raw.security?.xfo),
       nosniff: Boolean(raw.security?.nosniff),
-},
-  server:raw.server || "Unknown",
-  poweredBy:raw.poweredBy|| "Unknown",
-  cookies:raw.cookies||"N/A",
-  error:raw.error || "",
- } 
+    },
+    server:raw.server || "Unknown",
+    poweredBy:raw.poweredBy|| "Unknown",
+    cookies:raw.cookies||"N/A",
+    error:raw.error || "",
+  }; 
 }
 function normalizeTarget(raw: any): AnalyzedTarget {
   return {
@@ -45,7 +45,7 @@ function normalizeTarget(raw: any): AnalyzedTarget {
 
     // Si no hay datos, devolvemos null explícito, no un campo faltante
     http_intel: raw.http_intel ? normalizeHttpIntel(raw.http_intel) : null,
-    whois: (typeof raw.whois === 'object' && raw.whois !== null) 
+    whois: (typeof raw.whois === "object" && raw.whois !== null) 
       ? raw.whois 
-      : (typeof raw.whois_raw === 'string' ? normalizeWhois(raw.whois_raw) : null),  };
+      : (typeof raw.whois_raw === "string" ? normalizeWhois(raw.whois_raw) : null)  };
 }

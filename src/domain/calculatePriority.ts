@@ -6,16 +6,16 @@ import { scoreWeakness } from "./calculateWeakness";
 
 export function calculatePriority(item: AnalyzedTarget): "🟣 CRITICAL" | "🔴 HIGH" | "🟡 MEDIUM" | "⚪ LOW" {
   // 0. Los muertos no son prioridad
- const isLive=scoreLifeOfServer(item);
- const exposure=scoreExposure(item);
-const impact =scoreImpact(item);
-const weakness = scoreWeakness(item);
+  const isLive=scoreLifeOfServer(item);
+  const exposure=scoreExposure(item);
+  const impact =scoreImpact(item);
+  const weakness = scoreWeakness(item);
 
- const total = isLive + exposure + impact + weakness; 
+  const total = isLive + exposure + impact + weakness; 
 
   // Clasificación final
  
- if (item.ip === "0.0.0.0" || item.http_intel?.error === "Unreachable") return "⚪ LOW";
+  if (item.ip === "0.0.0.0" || item.http_intel?.error === "Unreachable") return "⚪ LOW";
   if (total >= 100) return "🟣 CRITICAL"; // Bases de datos expuestas
   if (total >= 50)  return "🔴 HIGH";     // Puertos de gestión o keywords sensibles
   if (total >= 20)  return "🟡 MEDIUM";   // Sitios vivos en infra propia

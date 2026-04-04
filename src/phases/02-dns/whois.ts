@@ -20,11 +20,11 @@ export function getRootDomain(host: string): string {
   const last = parts[parts.length - 1];
   const prev = parts[parts.length - 2];
   if (last && prev) {
-     if (last.length <= 2 && prev.length <= 3) {
+    if (last.length <= 2 && prev.length <= 3) {
       return parts.slice(-3).join(".");
-     }
+    }
   
-  return parts.slice(-2).join(".");
+    return parts.slice(-2).join(".");
   }
   return parts.slice(-2).join(".");
 }
@@ -40,16 +40,16 @@ function parseWhoisAgnostic(rawText: string) {
     if (line.startsWith("%") || line.startsWith("#") || !line.includes(":")) continue;
     const [rawKey, ...valueParts] = line.split(":");
     if (rawKey) {
-    const key = rawKey.trim().toLowerCase().replace(/\s+/g, "_");
-    const value = valueParts.join(":").trim();
-    if (!value) continue;
+      const key = rawKey.trim().toLowerCase().replace(/\s+/g, "_");
+      const value = valueParts.join(":").trim();
+      if (!value) continue;
 
-    if (json[key]) {
-      json[key] = Array.isArray(json[key]) ? [...json[key], value] : [json[key], value];
-    } else {
-      json[key] = value;
-    }  
-    } continue
+      if (json[key]) {
+        json[key] = Array.isArray(json[key]) ? [...json[key], value] : [json[key], value];
+      } else {
+        json[key] = value;
+      }  
+    } continue;
     
   }
   return json;
@@ -73,7 +73,7 @@ export function normalizeWhois(rawText: string) {
     nameServers: [...new Set([...getAll("nserver"), ...getAll("name_server")])],
     status: [...new Set([...getAll("domain_status"), ...getAll("status")])],
     emails: get("registrant_email") || get("abuse_contact_email") || "N/A",
-    raw: rawText.slice(0, 500)
+    raw: rawText.slice(0, 500),
   };
 }
 
@@ -83,26 +83,26 @@ export function normalizeWhois(rawText: string) {
  */
 export async function getWhoisIntel(host: string): Promise<WhoisIntel> {
   const root = getRootDomain(host);
-    const emptyWhois: WhoisIntel = {
+  const emptyWhois: WhoisIntel = {
     registrar: "N/A",
     creationDate: "N/A",
     expirationDate: "N/A",
     nameServers: [],
     status: [],
     emails: "N/A",
-    raw: ""
+    raw: "",
   }; 
   // Check de caché instantáneo
 
- if (whoisCache.has(root)) {
+  if (whoisCache.has(root)) {
     return whoisCache.get(root);
   }
-try {
+  try {
     // Intentamos ejecutar whois con un timeout agresivo
     // Si el puerto 43 está cerrado, esto fallará rápido
     const { stdout } = await execa("whois", [root], { 
       timeout: 8000,
-      reject: true // Queremos capturar el error en el catch
+      reject: true, // Queremos capturar el error en el catch
     });
 
     if (!stdout || stdout.includes("No match for")) return emptyWhois;

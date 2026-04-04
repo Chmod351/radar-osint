@@ -29,9 +29,9 @@ export async function resolveSingleDomain(domain: string): Promise<ResolvedDomai
       "-silent",
       "-nc",
       "-a",
-      "-resp", ],
-      { input:domain,
-        timeout: 10000 });
+      "-resp"],
+    { input:domain,
+      timeout: 10000 });
 
     if (!stdout.trim()) return null;
 
@@ -62,7 +62,7 @@ export async function enrichWebData(host: string): Promise<WebMetadata> {
       // "-threads",
       "-json",
       // "50",
-    ], {input:host, 
+    ], { input:host, 
       timeout: 20000 });
 
     if (!stdout.trim()) throw new Error("No web response");
@@ -77,7 +77,7 @@ export async function enrichWebData(host: string): Promise<WebMetadata> {
       status_code: data.status_code || data["status-code"] || 0,
       title: data.title || "N/A",
       webserver: data.web_server || data.server || data.webserver || "N/A",
-      cdn: (data.web_server || data.server || "").toLowerCase().includes("cloudflare") ? "cloudflare" : "none"
+      cdn: (data.web_server || data.server || "").toLowerCase().includes("cloudflare") ? "cloudflare" : "none",
     };  } catch (e) {
     // Fallback: Si falla el escaneo profundo, devolvemos lo básico
     logger.error("ENRICH", `${host} fallo con error: ${e}, mandando fallback`);
@@ -86,7 +86,7 @@ export async function enrichWebData(host: string): Promise<WebMetadata> {
       status_code: 0,
       title: "N/A",
       webserver: "N/A",
-      cdn: "none"
+      cdn: "none",
     };
   }
 }
@@ -98,7 +98,7 @@ export async function enrichWebData(host: string): Promise<WebMetadata> {
 export function classifyTarget(domainData: any) {
   const cloudKeywords = [
     "amazon", "google", "microsoft", "cloudflare", "akamai",
-    "fastly", "ovh", "digitalocean", "linode", "vercel", "github"
+    "fastly", "ovh", "digitalocean", "linode", "vercel", "github",
   ];
  
   const fingerprint=`${domainData.ip}_${domainData.status_code}_${domainData.title}`;
@@ -106,13 +106,13 @@ export function classifyTarget(domainData: any) {
   const isCloud = cloudKeywords.some(key => asnOwner.includes(key));
 
   if (globalFingerprints.has(fingerprint)) {
-    return{
-     ...domainData,
-     priority:"LOW",
-     infra_type:isCloud?"Cloud/CDN":"P/Self-H",
-     action:"DUPLICATE_ALIAS",
-     whois:undefined,
-     vulnerabilities: [],
+    return {
+      ...domainData,
+      priority:"LOW",
+      infra_type:isCloud?"Cloud/CDN":"P/Self-H",
+      action:"DUPLICATE_ALIAS",
+      whois:undefined,
+      vulnerabilities: [],
     };
     
   }

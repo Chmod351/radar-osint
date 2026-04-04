@@ -14,7 +14,7 @@ export async function dnsPhaseStream(subdomain: string): Promise<AnalyzedTarget 
 
     const [asnInfo, webInfo] = await Promise.all([
       withRetry(`ASN:${resolved.ip}`, () => getASNInfo(resolved.ip)),
-      withRetry(`WEB:${subdomain}`, () => enrichWebData(subdomain))
+      withRetry(`WEB:${subdomain}`, () => enrichWebData(subdomain)),
     ]);
 
     const baseData = {
@@ -22,7 +22,7 @@ export async function dnsPhaseStream(subdomain: string): Promise<AnalyzedTarget 
       ...webInfo,
       asn: asnInfo.asn,
       asn_owner: asnInfo.prefix,
-      phase: 2
+      phase: 2,
     };
 
     const analyzed = classifyTarget(baseData) as AnalyzedTarget;

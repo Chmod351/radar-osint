@@ -8,30 +8,30 @@ async function* runSubdomainStream(cmd: string, args: string[]): AsyncIterable<s
   try {
     const childProcess = execa(cmd, args, {
       stdout: "pipe",
-      stderr: "pipe"
+      stderr: "pipe",
     });
 
     const rl = readline.createInterface({
       input: childProcess.stdout!,
-      terminal: false
+      terminal: false,
     });
 
-for await (const line of rl) {
-  let cleanLine = line.trim().toLowerCase();
+    for await (const line of rl) {
+      let cleanLine = line.trim().toLowerCase();
   
-  // 1. Limpieza de basura Unicode común (u003e, etc)
-  cleanLine = cleanLine.replace(/u003e|u003c/g, ""); 
+      // 1. Limpieza de basura Unicode común (u003e, etc)
+      cleanLine = cleanLine.replace(/u003e|u003c/g, ""); 
 
-  // 2. Filtro de "Solo caracteres válidos"
-  // Un subdominio real solo tiene [a-z0-9.-]
-  // Si después de limpiar sigue teniendo basura, lo descartamos.
-  if (/^[a-z0-9.-]+$/.test(cleanLine)) {
-    yield cleanLine;
-  }
-}
-   /*  for await (const line of rl) { */
-      /* const cleanLine = line.trim().toLowerCase(); */
-      /* if (cleanLine) yield cleanLine; */
+      // 2. Filtro de "Solo caracteres válidos"
+      // Un subdominio real solo tiene [a-z0-9.-]
+      // Si después de limpiar sigue teniendo basura, lo descartamos.
+      if (/^[a-z0-9.-]+$/.test(cleanLine)) {
+        yield cleanLine;
+      }
+    }
+    /*  for await (const line of rl) { */
+    /* const cleanLine = line.trim().toLowerCase(); */
+    /* if (cleanLine) yield cleanLine; */
     /* } */
 
     await childProcess; 
@@ -40,7 +40,7 @@ for await (const line of rl) {
   }
 }
 
- /**
+/**
  * FASE 1: RECON (Paralelismo Real y Deduplicación en Vuelo)
  * Ambas fuentes corren en paralelo. El primero que encuentra, emite.
  */
@@ -50,7 +50,7 @@ export async function* streamAllSubdomains(target: string): AsyncIterable<string
 
   const sources = [
     { name: "Subfinder", cmd: subfinder, args: ["-d", target, "-silent"] },
-    { name: "Assetfinder", cmd: assetfinder, args: ["--subs-only", target] }
+    { name: "Assetfinder", cmd: assetfinder, args: ["--subs-only", target] },
   ];
 
   // Cola intermedia para los hallazgos

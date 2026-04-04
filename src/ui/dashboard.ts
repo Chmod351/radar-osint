@@ -14,12 +14,12 @@ const REAL_TECH_FILTER = (t: Technology) => {
  */
 export function dashboard(finalReport: AnalyzedTarget[]): void {
 
-const sortedReport = finalReport.sort((a, b) => {
+  const sortedReport = finalReport.sort((a, b) => {
     // Ponemos los que tienen puertos abiertos primero
     const aPorts = a.open_ports?.length || 0;
     const bPorts = b.open_ports?.length || 0;
     return bPorts - aPorts; 
-});
+  });
   const tableFriendlyReport = sortedReport.map(item => {
     const intel = item.http_intel || {};
     // FILTRAMOS AQUÍ: Solo lo que no sea ruido
@@ -48,7 +48,7 @@ const sortedReport = finalReport.sort((a, b) => {
       ports:portsSummary,
       app: item.app_status || "✅", 
       tech: techSummary.substring(0,20),
-      cdn: item.cdn 
+      cdn: item.cdn, 
     };
   });
 

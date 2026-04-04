@@ -11,7 +11,7 @@ export async function fingerprintingPhase(target: AnalyzedTarget): Promise<Analy
     // Disparamos las 2 consultas en paralelo para este host específico
     const [httpData, openPorts] = await Promise.all([
       getWebIntel(target.url),
-      await scanPortsSafe(host)
+      await scanPortsSafe(host),
     ]);
     
     return {
@@ -19,7 +19,7 @@ export async function fingerprintingPhase(target: AnalyzedTarget): Promise<Analy
       http_intel: httpData.http_intel,
       http_stack: httpData.http_stack,
       open_ports: openPorts || [],
-      phase: 3 
+      phase: 3, 
     };
   } catch (error: any) {
     logger.error("PHASE-03", `Fallo crítico analizando ${host}: ${error.message}`);

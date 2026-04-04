@@ -51,7 +51,7 @@ function parseNmapOutput(stdout: string): OpenPort[] {
 /**
  * Ejecuta un escaneo de puertos rápido y no intrusivo.
  */
-  async function scanPorts(target: string): Promise<OpenPort[]> {
+async function scanPorts(target: string): Promise<OpenPort[]> {
   try {
     logger.debug("NMAP", `Iniciando escaneo rápido para ${target}`);
     
@@ -63,7 +63,7 @@ function parseNmapOutput(stdout: string): OpenPort[] {
      * -n: No hace resolución DNS inversa (ya la hicimos nosotros).
      */
     const { stdout } = await execa("nmap", ["-F", "--open", "-T4","-n", target], { 
-      timeout: 45000 // 45 segundos máximo por host
+      timeout: 45000, // 45 segundos máximo por host
     });
 
     if (!stdout) return [];

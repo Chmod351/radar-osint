@@ -12,10 +12,10 @@ export class Orchestrator {
   async start(target: string) {
     const finalResults: any[] = [];
     const activeWorkers = new Set<Promise<void>>();
-logger.info("ORQUESTADOR", "iniciando....");
+    logger.info("ORQUESTADOR", "iniciando....");
     // Fase 1: Sigue siendo un Stream (la fuente)
     const subdomainStream = reconPhase(target);
-console.log(subdomainStream);
+    console.log(subdomainStream);
     for await (const sub of subdomainStream) {
       if (activeWorkers.size >= this.concurrencyLimit) {
         await Promise.race(activeWorkers);
@@ -30,15 +30,15 @@ console.log(subdomainStream);
 
             if (analyzed.action !== "DUPLICATE_ALIAS") {
             // LLAMADA ATÓMICA 2: HTTP/NMAP
-            const fullyEnriched = await fingerprintingPhase(analyzed);
+              const fullyEnriched = await fingerprintingPhase(analyzed);
             
-                if (fullyEnriched) {
-                   finalResults.push(fullyEnriched);
-                   logger.info("ORCHESTRATOR", `Target completado: ${sub}`);
-                }   
-            }else{
-                finalResults.push(analyzed);
-                  logger.info("ORCHESTRATOR", `Omitiendo escaneo profundo para : ${sub}`);
+              if (fullyEnriched) {
+                finalResults.push(fullyEnriched);
+                logger.info("ORCHESTRATOR", `Target completado: ${sub}`);
+              }   
+            } else {
+              finalResults.push(analyzed);
+              logger.info("ORCHESTRATOR", `Omitiendo escaneo profundo para : ${sub}`);
 
             }
            
@@ -55,13 +55,13 @@ console.log(subdomainStream);
     await Promise.all(activeWorkers);
     console.log(finalResults);
     console.log(`\n[🏁] ESCANEO FINALIZADO. Objetivos: ${finalResults.length}`);
-        const path = `${OP_DIR}/${TARGET}.json`;
+    const path = `${OP_DIR}/${TARGET}.json`;
 
-        logger.warn(`[💾] Guardando ${finalResults.length} objetivos en ${path}...`, "<----");
-        const content = JSON.stringify(finalResults, null, 2);
+    logger.warn(`[💾] Guardando ${finalResults.length} objetivos en ${path}...`, "<----");
+    const content = JSON.stringify(finalResults, null, 2);
 
-   await Bun.write(Bun.file(path), content);
-   return dashboard(finalResults);
+    await Bun.write(Bun.file(path), content);
+    return dashboard(finalResults);
   }
 }
 async function main(target:string) {
@@ -78,8 +78,8 @@ async function main(target:string) {
 
 // Ejecutamos
 //
- if (TARGET) {
+if (TARGET) {
    
-main(TARGET);
+  main(TARGET);
 
-  }
+}

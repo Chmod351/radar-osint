@@ -1,6 +1,6 @@
 import { execa } from "execa";
 import type { AnalyzedTarget,SearchSploitResult } from "../../shared/types";
-import {noise} from "../../shared/utils";
+import { noise } from "../../shared/utils";
 import { logger } from "../../shared/errorLogger";
 
 
@@ -11,7 +11,7 @@ export async function findExploits(detectedServer: string) {
     return [];
   }
 
-const match = detectedServer.match(/^([a-zA-Z0-9\-_]+)\/?([0-9.]*)/);
+  const match = detectedServer.match(/^([a-zA-Z0-9\-_]+)\/?([0-9.]*)/);
   if (!match) return [];
 
   const family = match[1].toLowerCase(); // apache, microsoft-iis, nginx...
@@ -27,13 +27,13 @@ const match = detectedServer.match(/^([a-zA-Z0-9\-_]+)\/?([0-9.]*)/);
 
     // 3. El Filtro ya no es restrictivo si la búsqueda es específica
     return results.filter(exploit => {
-       const title = exploit.Title.toLowerCase();
-       // Solo verificamos que el nombre del software esté en el título
-       return title.includes(family);
+      const title = exploit.Title.toLowerCase();
+      // Solo verificamos que el nombre del software esté en el título
+      return title.includes(family);
     });
   } catch (e) { 
     const err= `${detectedServer} FALLÓ EL RESOLVER ${e}`;
-     logger.error("FINDEXPLOITS", err );
+    logger.error("FINDEXPLOITS", err );
     return []; 
   }
 }
@@ -41,7 +41,7 @@ const match = detectedServer.match(/^([a-zA-Z0-9\-_]+)\/?([0-9.]*)/);
 
 const MANAGED_PROVIDERS = [
   "cloudflare", "akamai", "github", "amazon", "aws", "cloudfront", 
-  "google", "gws", "azure", "microsoft-edge", "incapsula", "sucuri"
+  "google", "gws", "azure", "microsoft-edge", "incapsula", "sucuri",
 ];
 
 function isInfrastructureManaged(item: AnalyzedTarget): boolean {
@@ -89,7 +89,7 @@ export function triageApp(appExploits: SearchSploitResult[], stack: any[]): stri
   const isNoise:string[] = noise;
 
   const cleanStack = stack.filter(t => 
-    !isNoise.some(n => t.name.includes(n))
+    !isNoise.some(n => t.name.includes(n)),
   );
 
   // 3. Criterio CMS (WordPress, etc.)
@@ -115,31 +115,31 @@ export function triageApp(appExploits: SearchSploitResult[], stack: any[]): stri
 
 
 export async function httpPhaseAndVulnerabilityPhaseMerger(enrichedItem: AnalyzedTarget): Promise<AnalyzedTarget> {
-    let techExploits: SearchSploitResult[] = [];
-    let serverExploits: SearchSploitResult[] = [];
+  let techExploits: SearchSploitResult[] = [];
+  let serverExploits: SearchSploitResult[] = [];
 
-    // 1. Capa de Servidor
-    if (enrichedItem.webserver !== "N/A") {
-        serverExploits = await findExploits(enrichedItem.webserver);
+  // 1. Capa de Servidor
+  if (enrichedItem.webserver !== "N/A") {
+    serverExploits = await findExploits(enrichedItem.webserver);
+  }
+
+  // 2. Capa de Aplicación (Stack)
+  if (enrichedItem.http_stack && enrichedItem.http_stack.length > 0) {
+    for (const tech of enrichedItem.http_stack) {
+      const isNoise = noise.includes(tech.name);
+      if (!isNoise) {
+        const techQuery = `${tech.name} ${tech.version !== "unknown" ? tech.version : ""}`;
+        console.log(`[🎯] Radar apuntando a: "${techQuery}"`);
+        const results = await findExploits(techQuery);
+        techExploits = [...techExploits, ...results];
+      }
     }
+  }
 
-    // 2. Capa de Aplicación (Stack)
-    if (enrichedItem.http_stack && enrichedItem.http_stack.length > 0) {
-        for (const tech of enrichedItem.http_stack) {
-              const isNoise = noise.includes(tech.name);
-              if (!isNoise) {
-                 const techQuery = `${tech.name} ${tech.version !== "unknown" ? tech.version : ""}`;
-                 console.log(`[🎯] Radar apuntando a: "${techQuery}"`);
-                  const results = await findExploits(techQuery);
-                 techExploits = [...techExploits, ...results];
-               }
-        }
-    }
-
-    return {
-        ...enrichedItem,
-        vulnerabilities: [...serverExploits, ...techExploits], // Unión para el reporte global
-        infra_status: triageInfra(serverExploits, enrichedItem),
-        app_status: triageApp(techExploits, enrichedItem.http_stack || [])
-    };
+  return {
+    ...enrichedItem,
+    vulnerabilities: [...serverExploits, ...techExploits], // Unión para el reporte global
+    infra_status: triageInfra(serverExploits, enrichedItem),
+    app_status: triageApp(techExploits, enrichedItem.http_stack || []),
+  };
 }

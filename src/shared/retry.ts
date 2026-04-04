@@ -16,7 +16,7 @@ interface RetryOptions {
 export async function withRetry<T>(
   taskName: string,
   fn: () => Promise<T>,
-  options: RetryOptions = {}
+  options: RetryOptions = {},
 ): Promise<T> {
   const { retries = 3, delay = 1000, factor = 2 } = options;
   

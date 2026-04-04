@@ -15,7 +15,7 @@ export interface Technology {
 export class WhatWebService {
   private noise = [
     "IP", "HTTPServer", "Country", "Date", "BaseID",
-    "Title", "HTML5", "Script", "X-UA-Compatible", "Email"
+    "Title", "HTML5", "Script", "X-UA-Compatible", "Email",
   ];
 
   async scan(target: string): Promise<Technology[]> {
@@ -25,7 +25,7 @@ export class WhatWebService {
       await execa("whatweb", [
         "--color=never",
         `--log-json=${tempFile}`,
-        target
+        target,
       ], { reject: false, timeout: 25000 });
 
       const rawContent = await readFile(tempFile, "utf-8");
@@ -48,11 +48,11 @@ export class WhatWebService {
       .filter(([name]) => !this.noise.includes(name))
       .map(([name, details]: [string, any]) => ({
         name,
-        version: details.version?.[0] || details.string?.[0] || "unknown"
+        version: details.version?.[0] || details.string?.[0] || "unknown",
       }))
       .filter(t => 
         t.version !== "unknown" || 
-        ["Nginx", "Apache", "PHP", "WordPress", "Docker", "Cloudflare", "Laravel"].includes(t.name)
+        ["Nginx", "Apache", "PHP", "WordPress", "Docker", "Cloudflare", "Laravel"].includes(t.name),
       );
   }
 }
@@ -74,7 +74,7 @@ async function analyzeHeaders(url: string) {
       method: "GET",
       headers: { "User-Agent": agent } as Record<string, string>,
       redirect: "follow",
-      signal: controller.signal
+      signal: controller.signal,
     });
 
     clearTimeout(id);
@@ -91,7 +91,7 @@ async function analyzeHeaders(url: string) {
       },
       server: headers["server"] || "Unknown",
       poweredBy: headers["x-powered-by"] || headers["server"] || "N/A",
-      cookies: response.headers.get("set-cookie") ? "Present" : "None"
+      cookies: response.headers.get("set-cookie") ? "Present" : "None",
     };
   } catch (e: any) {
     logger.error("HEADERS", `${e}`);
@@ -106,11 +106,11 @@ async function analyzeHeaders(url: string) {
 export async function getWebIntel(url: string) {
   const [intel, stack] = await Promise.all([
     analyzeHeaders(url),
-    scanner.scan(url)
+    scanner.scan(url),
   ]);
 
   return {
-    http_intel: intel ||{error:"Unreachable"},
+    http_intel: intel ||{ error:"Unreachable" },
     http_stack: stack || [],
   };
 }

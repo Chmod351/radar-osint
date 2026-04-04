@@ -12,11 +12,11 @@ class Logger {
 
   private getColor(level: LogLevel): string {
     switch (level) {
-      case "ERROR": return "\x1b[31m"; // Rojo
-      case "WARN":  return "\x1b[33m"; // Amarillo
-      case "INFO":  return "\x1b[36m"; // Cian
-      case "DEBUG": return "\x1b[90m"; // Gris
-      default:      return "\x1b[0m";
+    case "ERROR": return "\x1b[31m"; // Rojo
+    case "WARN":  return "\x1b[33m"; // Amarillo
+    case "INFO":  return "\x1b[36m"; // Cian
+    case "DEBUG": return "\x1b[90m"; // Gris
+    default:      return "\x1b[0m";
     }
   }
 
