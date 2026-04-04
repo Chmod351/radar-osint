@@ -24,7 +24,7 @@ export function normalizeTarget(raw: AnalyzedTarget): AnalyzedTarget {
     host: raw.host || "unknown",
     ip: raw.ip || "0.0.0.0",
 
-    app_status:raw.app_status || "N/A",
+    app_status:raw.app_status || "✅",
     whois_raw:raw.whois_raw  || "N/A",
     asn: raw.asn || "N/A",
     asn_owner: raw.asn_owner || "N/A",
@@ -35,7 +35,7 @@ export function normalizeTarget(raw: AnalyzedTarget): AnalyzedTarget {
     webserver: raw.webserver || "N/A",
     cdn: raw.cdn || "none",
     infra_type: raw.infra_type || "Unknown",
-    infra_status:raw.infra_status || "Unknown",
+    infra_status:raw.infra_status ||"⚪ N/A",
     priority: raw.priority || "⚪ LOW",
     action: raw.action || "SCAN_READY",
 
