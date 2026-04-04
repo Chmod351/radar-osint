@@ -2,6 +2,12 @@ export interface Technology {
   name: string;
   version: string;
 }
+
+export interface OpenPort {
+  port: number;
+  service: string;
+  protocol: string;
+}
 export interface WhoisIntel {
   registrar?: string;
   creationDate?: string;
@@ -51,12 +57,8 @@ export interface AnalyzedTarget {
   // Datos de Fase 3 (Opcionales hasta que pase por la fase)
   http_intel?: HttpIntel;
   http_stack?: Technology[];
-  open_ports?:[{
-port:number; 
-protocol:string; 
-service:string;
-  }]
-  
+  open_ports?:OpenPort[]
+
   // Datos de Fase 4
   vulnerabilities?: SearchSploitResult[]
   infra_status?:string,

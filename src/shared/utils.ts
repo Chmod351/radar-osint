@@ -8,11 +8,10 @@ export const noise= ["UncommonHeaders", "Cookies", "HttpOnly", "Content-Language
     "Meta-Refresh-Redirect", "RedirectLocation", "PasswordField",
     "X-Powered-By"];
 
-
+// ----------------
 export const noiseSet = new Set(noise);
-
 export const isRealTech = (techName: string) => !noiseSet.has(techName);
-
+// ----------------
 
 
 export const USER_AGENTS = [
