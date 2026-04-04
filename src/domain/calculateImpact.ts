@@ -5,7 +5,7 @@ export function scoreImpact(item:AnalyzedTarget) {
   let score = 0;
 
   // Dominio sensible
-  const sensitive = criticalKeywords
+  const sensitive = criticalKeywords;
   if (sensitive.some(k => item.host.includes(k))) score += 40;
 
   // Infra propia
