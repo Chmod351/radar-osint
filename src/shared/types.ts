@@ -9,13 +9,13 @@ export interface OpenPort {
   protocol: string;
 }
 export interface WhoisIntel {
-  registrar?: string;
-  creationDate?: string;
-  expirationDate?: string;
+  registrar: string;
+  creationDate: string;
+  expirationDate: string;
   nameServers: string[];
   status: string[];
-  emails?: string;
-  raw?: string; 
+  emails: string;
+  raw: string; 
 }
 
 export interface SecurityHeaders {
@@ -32,7 +32,13 @@ export interface HttpIntel {
   server: string;
   poweredBy: string;
   cookies: string;
-  error?: string;
+  error: string;
+}
+
+export interface Fingerprint {
+server:string,
+version:string,
+product:string,
 }
 
 export interface AnalyzedTarget {
@@ -51,21 +57,21 @@ export interface AnalyzedTarget {
   cdn: string;
   infra_type: "Cloud/CDN" | "P/Self-H";
   // Inteligencia y Análisis
-  priority: "HIGH" | "LOW";
+  priority: "HIGH" | "LOW" | "CRITICAL"|"MEDIUM";
   action: "SCAN_READY" | "SKIP_DEEP" | "DUPLICATE_ALIAS";
   
   // Datos de Fase 3 (Opcionales hasta que pase por la fase)
-  http_intel?: HttpIntel;
-  http_stack?: Technology[];
-  open_ports?:OpenPort[]
+  http_intel: HttpIntel | null;
+  http_stack: Technology[];
+  open_ports:OpenPort[]
 
   // Datos de Fase 4
-  vulnerabilities?: SearchSploitResult[]
-  infra_status?:string,
-  app_status?:string,
+  vulnerabilities: SearchSploitResult[]
+  infra_status:string,
+  app_status:string,
 
-  whois?: WhoisIntel;
-  whois_raw?: any;
+  whois: WhoisIntel | null;
+  whois_raw: any;
 }
 
 
