@@ -1,4 +1,4 @@
-import { USER_AGENTS } from "../../shared/utils.ts";
+import { getErrorMessage, USER_AGENTS } from "../../shared/utils.ts";
 import { logger } from "../../shared/errorLogger.ts";
 import { execa } from "execa";
 import { unlink, readFile } from "node:fs/promises";
@@ -36,9 +36,11 @@ export class WhatWebService {
       const parsed = JSON.parse(rawContent);
       return this.parsePlugins(parsed[0]?.plugins || {});
 
-    } catch (error: any) {
-      logger.error("WHATWEB", `Fallo en escaneo de ${target}: ${error.message}`);
-      try { await unlink(tempFile); } catch { }
+    } catch (error: unknown) {
+      logger.error("WHATWEB", getErrorMessage(error));
+      try { await unlink(tempFile); } catch (error:unknown){
+        logger.error("UNLINK", getErrorMessage(error));
+      }
       return [];
     }
   }
@@ -93,8 +95,11 @@ async function analyzeHeaders(url: string) {
       poweredBy: headers["x-powered-by"] || headers["server"] || "N/A",
       cookies: response.headers.get("set-cookie") ? "Present" : "None",
     };
-  } catch (e: any) {
- return   await headersFallback(url)
+  } catch (error: unknown) {
+    
+    logger.error("HEADERS", getErrorMessage(error));
+
+    return   await headersFallback(url);
       
   }
 }
@@ -102,23 +107,23 @@ async function analyzeHeaders(url: string) {
 
 async function headersFallback(url:string) {
   try {
-    const agent :string =getRandomAgent() ?? "Mozilla/5.0 (Radar/1.0)"
-   const { stdout, stderr } = await execa("curl", [
+    const agent :string =getRandomAgent() ?? "Mozilla/5.0 (Radar/1.0)";
+    const { stdout, stderr } = await execa("curl", [
       "-I",                      // Solo headers
       "-s",                      // Silent
       "-L",                      // Seguir redirecciones
       "-k",                      
       "--max-time", "10",
       "-A", agent,
-      url
+      url,
     ], { reject: false });
     if (!stdout) {
-      throw new Error(`Curl no devolvio headers:${stderr}`)
+      throw new Error(`Curl no devolvio headers:${stderr}`);
     }
-    const headersRaw = stdout.split("\r\n")
+    const headersRaw = stdout.split("\r\n");
     const headers: Record<string,string>={}; 
 
-headersRaw.forEach(line => {
+    headersRaw.forEach(line => {
       const parts = line.split(": ");
       if (parts.length >= 2 && parts[0]) {
         const key = parts[0].toLowerCase();
@@ -126,9 +131,9 @@ headersRaw.forEach(line => {
         headers[key] = value;
       }
     });
-    const statusLine=headersRaw[0]
+    const statusLine=headersRaw[0];
     const statusParts = statusLine ? statusLine.split(" "): [];
-    const statusCode = statusParts.length>=2 && statusParts[1] ? parseInt(statusParts[1]):0
+    const statusCode = statusParts.length>=2 && statusParts[1] ? parseInt(statusParts[1]):0;
 
     return {
       protocol: new URL(url).protocol,
@@ -143,9 +148,9 @@ headersRaw.forEach(line => {
       poweredBy: headers["x-powered-by"] || headers["server"] || "N/A",
       cookies: headers["set-cookie"] ? "Present" : "None",
     };
-  } catch (e) {
+  } catch (error:unknown) {
     /* handle error */
-    logger.error("HEADERS-CURL", `${url} -> ${e}`);
+    logger.error("HEADERS-CURL", getErrorMessage(error));
     return { error: "Unreachable", status: 0 };
   }
   

@@ -1,5 +1,7 @@
 import { execa } from "execa";
 import { logger } from "../../shared/errorLogger.ts";
+import { getErrorMessage } from "../../shared/utils.ts";
+import type { AnalyzedTarget } from "../../shared/types.ts";
 
 
 export interface ResolvedDomain {
@@ -40,8 +42,8 @@ export async function resolveSingleDomain(domain: string): Promise<ResolvedDomai
       host: data.host,
       ip: data.a?.[0] || "0.0.0.0",
     };
-  } catch (e) {
-    logger.error("RESOLVER-SINGLE-DOMAIN", `${e}`);
+  } catch (e:unknown) {
+    logger.error("RESOLVER-SINGLE-DOMAIN", getErrorMessage(e));
     // No logueamos error aquí para no ensuciar si el dominio simplemente no existe
     return null;
   }
@@ -95,7 +97,7 @@ export async function enrichWebData(host: string): Promise<WebMetadata> {
  * 3. CLASIFICADOR DE TARGET 
  *  para decidir qué hacer con el target.
  */
-export function classifyTarget(domainData: any) {
+export function classifyTarget(domainData: AnalyzedTarget) {
   const cloudKeywords = [
     "amazon", "google", "microsoft", "cloudflare", "akamai",
     "fastly", "ovh", "digitalocean", "linode", "vercel", "github",

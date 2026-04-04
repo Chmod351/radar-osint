@@ -3,6 +3,7 @@ import {  scanPortsSafe } from "./portsScan.ts";
 import { logger } from "../../shared/errorLogger.ts";
 import type { AnalyzedTarget, HttpIntel } from "../../shared/types";
 import { normalizeHttpIntel } from "../../shared/helper.ts";
+import { getErrorMessage } from "../../shared/utils.ts";
 
 
 export const normalizedIntel: HttpIntel={
@@ -35,9 +36,15 @@ export async function fingerprintingPhase(target: AnalyzedTarget): Promise<Analy
       http_stack: httpData.http_stack,
       open_ports: openPorts || [],
     };
-  } catch (error: any) {
-    logger.error("PHASE-03", `Fallo crítico analizando ${host}: ${error.message}`);
+  } catch (error: unknown) {
+    logger.error("PHASE-03", getErrorMessage(error));
 
-    return { ...target, http_intel:{ ...normalizedIntel,error:error.message??"Fallo el fingerprinting" },http_stack:target.http_stack, open_ports:target.open_ports };
+    return { ...target,
+      http_intel:{ ...normalizedIntel,
+        error:getErrorMessage(error)?? "Fallo el fingerprinting", 
+      },
+      http_stack:target.http_stack,
+      open_ports:target.open_ports, 
+    };
   }
 }

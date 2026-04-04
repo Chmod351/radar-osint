@@ -1,6 +1,7 @@
 import { execa } from "execa";
 import { logger } from "../../shared/errorLogger.ts";
 import type { OpenPort } from "../../shared/types.ts";
+import { getErrorMessage } from "../../shared/utils.ts";
 
 
 /**
@@ -39,9 +40,9 @@ function parseNmapOutput(stdout: string): OpenPort[] {
     const match = line.match(/^(\d+)\/(tcp|udp)\s+open\s+(.+)$/);
     if (match ) {
       ports.push({
-        port: parseInt(match[1], 10)||0,
+        port:match[1]? parseInt(match[1], 10):0,
         protocol: match[2] || "",
-        service: match[3].trim() || "",
+        service:match[3]? match[3].trim() : "",
       });
     }
   }
@@ -75,13 +76,10 @@ async function scanPorts(target: string): Promise<OpenPort[]> {
     }
 
     return discoveredPorts;
-  } catch (e: any) {
-    // Si nmap no está instalado o falla la red
-    if (e.code === "ENOENT") {
-      logger.error("NMAP", "Binario 'nmap' no encontrado en el sistema.");
-    } else {
-      logger.error("NMAP", `Fallo escaneo en ${target}: ${e.message}`);
-    }
+  } catch (e: unknown) {
+   
+    logger.error("NMAP", getErrorMessage(e));
+    
     return [];
   }
 }

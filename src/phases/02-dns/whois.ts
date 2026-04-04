@@ -1,6 +1,7 @@
 import { execa } from "execa";
 import { logger } from "../../shared/errorLogger.ts";
 import type { WhoisIntel } from "../../shared/types.ts";
+import { getErrorMessage } from "../../shared/utils.ts";
 
 /**
  * CACHÉ GLOBAL DE WHOIS
@@ -105,7 +106,7 @@ export async function getWhoisIntel(host: string): Promise<WhoisIntel> {
     // Si el puerto 43 está cerrado, esto fallará rápido
     const { stdout } = await execa("whois", [root], { 
       timeout: 8000,
-      reject: true, // Queremos capturar el error en el catch
+      reject: true, 
     });
 
     if (!stdout || stdout.includes("No match for")) return emptyWhois;
@@ -113,13 +114,13 @@ export async function getWhoisIntel(host: string): Promise<WhoisIntel> {
     const parsed = normalizeWhois(stdout);
     whoisCache.set(root, parsed);
     return parsed;
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Silent fail: Si no hay conexión o el comando falla, 
     // no bloqueamos el flujo, simplemente devolvemos null.
     // Esto evita el spam de "Connection refused".
     //
     whoisCache.set(root, emptyWhois);
-    logger.error("WHO-IS", `${error}`);
+    logger.error("WHO-IS", getErrorMessage(error));
     return emptyWhois;
   }
 }

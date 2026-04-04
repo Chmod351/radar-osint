@@ -1,3 +1,5 @@
+import { logger } from "./errorLogger";
+import type { AnalyzedTarget } from "./types";
 
 export const subfinder = "subfinder";
 export const assetfinder = "assetfinder";
@@ -39,10 +41,18 @@ export    const criticalKeywords = [
 
 
 
-export async function dataSaver(finalReport:any){
+export async function dataSaver(finalReport:AnalyzedTarget){
   try {
     await Bun.write(`${OP_DIR}/report.json`,JSON.stringify(finalReport,null,2));
-  } catch (e){
-    console.log(e);
+  } catch (error:unknown){
+    logger.error("FINAL-REPORT", getErrorMessage(error));
   }
+}
+
+
+
+
+export function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
 }

@@ -1,5 +1,6 @@
 import { resolveTxt } from "node:dns/promises";
 import { logger } from "../../shared/errorLogger.ts";
+import { getErrorMessage } from "../../shared/utils.ts";
 
 
 export interface ASNIntel {
@@ -31,11 +32,9 @@ export async function getASNInfo(ip: string): Promise<ASNIntel> {
         country: parts[2] || "Unknown",
       };
     }
-  } catch (e: any) {
+  } catch (e: unknown) {
     // Si el error es NXDOMAIN, la IP no tiene ASN asociado 
-    if (e.code !== "ENOTFOUND") {
-      logger.info("ASN-LOOKUP", `No se encontró registro para ${ip}`);
-    }
+    logger.info("ASN-LOOKUP", getErrorMessage(e));
   }
 
   return { asn: "AS_UNKNOWN", prefix: "Unknown", country: "Unknown" };
