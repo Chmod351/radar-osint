@@ -1,5 +1,5 @@
 import { execa } from "execa";
-import type { AnalyzedTarget,SearchSploitResult } from "../../shared/types";
+import type { AnalyzedTarget,SearchSploitOutput,SearchSploitResult, Technology } from "../../shared/types";
 import { noise } from "../../shared/utils";
 import { logger } from "../../shared/errorLogger";
 
@@ -12,7 +12,7 @@ export async function findExploits(detectedServer: string) {
   }
 
   const match = detectedServer.match(/^([a-zA-Z0-9\-_]+)\/?([0-9.]*)/);
-  if (!match) return [];
+  if (!match || !match[1]) return [];
 
   const family = match[1].toLowerCase(); // apache, microsoft-iis, nginx...
   const version = match[2];              // 2.4.59, 7.5, 1.17...
@@ -22,7 +22,7 @@ export async function findExploits(detectedServer: string) {
   
   try {
     const { stdout } = await execa("searchsploit", ["--json", query]);
-    const data = JSON.parse(stdout);
+    const data:SearchSploitOutput = JSON.parse(stdout);
     let results = data.Results || [];
 
     // 3. El Filtro ya no es restrictivo si la búsqueda es específica
@@ -79,7 +79,7 @@ export function triageInfra(serverExploits: SearchSploitResult[], item: Analyzed
 }
 
 
-export function triageApp(appExploits: SearchSploitResult[], stack: any[]): string {
+export function triageApp(appExploits: SearchSploitResult[], stack: Technology[]): string {
   // 1. Prioridad Máxima: Si encontramos vulnerabilidades reales
   if (appExploits.length > 0) {
     return `💀 APP-VULN (${appExploits.length})`;
@@ -106,7 +106,7 @@ export function triageApp(appExploits: SearchSploitResult[], stack: any[]): stri
   }
 
   // 5. Si no hay nada de lo anterior pero el stack limpio tiene algo (ej. Apache, Nginx)
-  if (cleanStack.length > 0) {
+  if (cleanStack.length > 0 && cleanStack &&cleanStack[0]) {
     return `🛠️ ${cleanStack[0].name}`;
   }
 
@@ -129,7 +129,7 @@ export async function httpPhaseAndVulnerabilityPhaseMerger(enrichedItem: Analyze
       const isNoise = noise.includes(tech.name);
       if (!isNoise) {
         const techQuery = `${tech.name} ${tech.version !== "unknown" ? tech.version : ""}`;
-        console.log(`[🎯] Radar apuntando a: "${techQuery}"`);
+        logger.warn("VULNERABILITY", `Buscando vulnerabilidad para :${techQuery}`)
         const results = await findExploits(techQuery);
         techExploits = [...techExploits, ...results];
       }

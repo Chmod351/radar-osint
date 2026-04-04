@@ -32,7 +32,7 @@ export interface HttpIntel {
   server: string;
   poweredBy: string;
   cookies: string;
-  error: string;
+  error?: string | null;
 }
 
 export interface Fingerprint {
@@ -61,7 +61,7 @@ export interface AnalyzedTarget {
   action: "SCAN_READY" | "SKIP_DEEP" | "DUPLICATE_ALIAS";
   
   // Datos de Fase 3 (Opcionales hasta que pase por la fase)
-  http_intel: HttpIntel | null;
+  http_intel: HttpIntel;
   http_stack: Technology[];
   open_ports:OpenPort[]
 
@@ -70,8 +70,8 @@ export interface AnalyzedTarget {
   infra_status:string,
   app_status:string,
 
-  whois: WhoisIntel | null;
-  whois_raw: any;
+  whois: WhoisIntel;
+  whois_raw: string;
 }
 
 

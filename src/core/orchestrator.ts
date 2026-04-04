@@ -4,13 +4,14 @@ import { fingerprintingPhase } from "../phases/03-http/index-http.ts";
 import { OP_DIR, TARGET } from "../shared/utils.ts";
 import { logger } from "../shared/errorLogger.ts";
 import { dashboard } from "../ui/dashboard.ts";
+import type { AnalyzedTarget } from "../shared/types.ts";
 
 export class Orchestrator {
   // por defecto 15
   private concurrencyLimit =  2;
 
   async start(target: string) {
-    const finalResults: any[] = [];
+    const finalResults: AnalyzedTarget[] = [];
     const activeWorkers = new Set<Promise<void>>();
     logger.info("ORQUESTADOR", "iniciando....");
     // Fase 1: Sigue siendo un Stream (la fuente)

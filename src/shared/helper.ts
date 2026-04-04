@@ -2,7 +2,7 @@ import { normalizeWhois } from "../phases/02-dns/whois";
 import type { AnalyzedTarget, HttpIntel } from "./types";
 
 
-function normalizeHttpIntel(raw:HttpIntel) {
+export function normalizeHttpIntel(raw:HttpIntel) {
   return {
     protocol:raw.protocol||"Unknown",
     status: Number(raw.status) ||0,

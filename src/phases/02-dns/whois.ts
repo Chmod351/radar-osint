@@ -7,7 +7,7 @@ import type { WhoisIntel } from "../../shared/types.ts";
  * La mantenemos fuera de las funciones para que persista
  * durante todo el streaming del Radar.
  */
-const whoisCache = new Map<string, any>();
+const whoisCache = new Map<string, WhoisIntel>();
 /**
  * 1. OBTENER DOMINIO RAÍZ
  * 
@@ -95,7 +95,7 @@ export async function getWhoisIntel(host: string): Promise<WhoisIntel> {
   // Check de caché instantáneo
 
   if (whoisCache.has(root)) {
-    return whoisCache.get(root);
+    return whoisCache.get(root)!;
   }
   try {
     // Intentamos ejecutar whois con un timeout agresivo
@@ -115,7 +115,7 @@ export async function getWhoisIntel(host: string): Promise<WhoisIntel> {
     // no bloqueamos el flujo, simplemente devolvemos null.
     // Esto evita el spam de "Connection refused".
     //
-
+    whoisCache.set(root, emptyWhois);
     logger.error("WHO-IS", `${error}`);
     return emptyWhois;
   }
