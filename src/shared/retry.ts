@@ -1,4 +1,5 @@
 import { logger } from "./errorLogger";
+import { getErrorMessage } from "./utils";
 
 /**
  * Opciones para la estrategia de reintento
@@ -9,10 +10,18 @@ interface RetryOptions {
   factor?: number;     // Multiplicador exponencial (default 2)
 }
 
+interface SystemError extends Error {
+  code?: string;
+}
 /**
  * Envuelve una función asincrónica con lógica de reintento exponencial.
  * Ideal para DNS, ASN y peticiones HTTP en el pipeline del Radar.
  */
+
+function isSystemError(error: unknown): error is SystemError {
+  return error instanceof Error && 'code' in error;
+}
+
 export async function withRetry<T>(
   taskName: string,
   fn: () => Promise<T>,
@@ -26,18 +35,20 @@ export async function withRetry<T>(
   for (let i = 0; i < retries; i++) {
     try {
       return await fn();
-    } catch (error: any) {
+    } catch (error: unknown) {
       lastError = error;
 
       //  No reintentar si el error es definitivo (NXDOMAIN / ENOTFOUND)
-      if (error.code === "ENOTFOUND" || error.code === "EAI_NONAME") {
-        throw error;
+      if (isSystemError(error)) {
+        if (error.code === "ENOTFOUND" || error.code === "EAI_NONAME") {
+          throw error; // Salida inmediata si el dominio no existe
+        }
       }
 
       // Si es el último intento, no esperamos más
       if (i === retries - 1) break;
 
-      logger.error("RESILIENCE", `Fallo en ${taskName} (intento ${i + 1}/${retries}). Reintentando en ${currentDelay}ms...`);
+      logger.error("RESILIENCE", `Fallo en ${taskName} (intento ${i + 1}/${retries}): ${getErrorMessage(error)}. Reintentando en ${currentDelay}ms...`);
       
       await Bun.sleep(currentDelay);
       
