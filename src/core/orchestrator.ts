@@ -1,7 +1,7 @@
 import { reconPhase } from "../phases/01-recon/index-recon.ts";
 import { dnsPhaseStream } from "../phases/02-dns/index-dns.ts";
 import { fingerprintingPhase } from "../phases/03-http/index-http.ts";
-import { OP_DIR, TARGET } from "../shared/utils.ts";
+import { getErrorMessage, OP_DIR, TARGET } from "../shared/utils.ts";
 import { logger } from "../shared/errorLogger.ts";
 import { dashboard } from "../ui/dashboard.ts";
 import type { AnalyzedTarget } from "../shared/types.ts";
@@ -22,31 +22,28 @@ export class Orchestrator {
       if (activeWorkers.size >= this.concurrencyLimit) {
         await Promise.race(activeWorkers);
       }
-
       const worker = (async () => {
         try {
           // LLAMADA ATÓMICA 1: DNS/ASN/WHOIS
           const analyzed = await dnsPhaseStream(sub);
-          
-          if (analyzed) {
 
+          let normalized=normalizeTarget(analyzed)
+          if (analyzed) {
             if (analyzed.action !== "DUPLICATE_ALIAS") {
             // LLAMADA ATÓMICA 2: HTTP/NMAP
               const fullyEnriched = await fingerprintingPhase(analyzed);
-            
               if (fullyEnriched) {
-                finalResults.push(fullyEnriched);
+                normalized=normalizeTarget(fullyEnriched)
+                finalResults.push(normalized);
                 logger.info("ORCHESTRATOR", `Target completado: ${sub}`);
-              }   
+              }
             } else {
               finalResults.push(analyzed);
               logger.info("ORCHESTRATOR", `Omitiendo escaneo profundo para : ${sub}`);
-
             }
-           
           }
-        } catch (e) {
-          logger.error("WORKER", `Error en pipeline para ${sub}: ${e}`);
+        } catch (e:unknown) {
+          logger.error("ORQUESTADOR",getErrorMessage(e) );
         }
       })();
 
@@ -66,6 +63,11 @@ export class Orchestrator {
     return dashboard(normalizedFinalData);
   }
 }
+
+
+
+
+
 async function main(target:string) {
  
   const orchestrator = new Orchestrator(); 

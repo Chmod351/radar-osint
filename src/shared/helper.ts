@@ -19,7 +19,37 @@ export function normalizeHttpIntel(raw:HttpIntel) {
     error:raw.error || "",
   }; 
 }
-export function normalizeTarget(raw: AnalyzedTarget): AnalyzedTarget {
+export function normalizeTarget(raw: AnalyzedTarget|null): AnalyzedTarget {
+
+  // Si es nulo, generamos el "Grado Cero" del objeto para que el resto del sistema no explote
+  if (!raw) {
+    return {
+      host: "unknown",
+      ip: "0.0.0.0",
+      app_status: "❌",
+      url: "",
+      status_code: 0,
+      title: "N/A",
+      webserver: "N/A",
+      cdn: "none",
+      infra_type: "Unknown",
+      infra_status: "🔴 ERROR",
+      priority: "LOW",
+      action: "SCAN_FAILED",
+      http_stack: [],
+      open_ports: [],
+      vulnerabilities: [],
+      http_intel: normalizedIntel,
+      whois: emptyWhois,
+      asn: "N/A",
+      asn_owner: "N/A",
+      country: "N/A",
+      whois_raw: "N/A"
+    };
+  }
+
+  // Si no es nulo, aplicamos tu lógica de limpieza habitual
+
   return {
     host: raw.host || "unknown",
     ip: raw.ip || "0.0.0.0",

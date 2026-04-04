@@ -55,10 +55,10 @@ export interface AnalyzedTarget {
   title: string;
   webserver: string;
   cdn: string;
-  infra_type: "Cloud/CDN" | "P/Self-H";
+  infra_type: "Cloud/CDN" | "P/Self-H" | "Unknown";
   // Inteligencia y Análisis
   priority: "HIGH" | "LOW" | "CRITICAL"|"MEDIUM";
-  action: "SCAN_READY" | "SKIP_DEEP" | "DUPLICATE_ALIAS";
+  action: "SCAN_READY" | "SKIP_DEEP" | "DUPLICATE_ALIAS" | "SCAN_FAILED"
   
   // Datos de Fase 3 (Opcionales hasta que pase por la fase)
   http_intel: HttpIntel;
