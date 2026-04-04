@@ -1,4 +1,5 @@
-import { normalizeWhois } from "../phases/02-dns/whois";
+import { emptyWhois, normalizeWhois } from "../phases/02-dns/whois";
+import { normalizedIntel } from "../phases/03-http/index-http";
 import type { AnalyzedTarget, HttpIntel } from "./types";
 
 
@@ -18,7 +19,7 @@ export function normalizeHttpIntel(raw:HttpIntel) {
     error:raw.error || "",
   }; 
 }
-function normalizeTarget(raw: any): AnalyzedTarget {
+export function normalizeTarget(raw: AnalyzedTarget): AnalyzedTarget {
   return {
     host: raw.host || "unknown",
     ip: raw.ip || "0.0.0.0",
@@ -44,8 +45,8 @@ function normalizeTarget(raw: any): AnalyzedTarget {
     vulnerabilities: Array.isArray(raw.vulnerabilities) ? raw.vulnerabilities : [],
 
     // Si no hay datos, devolvemos null explícito, no un campo faltante
-    http_intel: raw.http_intel ? normalizeHttpIntel(raw.http_intel) : null,
-    whois: (typeof raw.whois === "object" && raw.whois !== null) 
-      ? raw.whois 
-      : (typeof raw.whois_raw === "string" ? normalizeWhois(raw.whois_raw) : null)  };
+    http_intel: raw.http_intel ? normalizeHttpIntel(raw.http_intel) : normalizedIntel,
+  whois: (typeof raw.whois === "object" && raw.whois !== null) 
+  ? raw.whois 
+  : (typeof raw.whois_raw === "string" ? normalizeWhois(raw.whois_raw) : emptyWhois)}
 }
