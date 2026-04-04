@@ -1,4 +1,6 @@
-import type { AnalyzedTarget } from "../shared/types";
+import type { AnalyzedTarget, Fingerprint } from "../shared/types";
+
+
 
 function fingerprintServer(server?: string): Fingerprint {
   if (!server) return { product: "unknown" };
