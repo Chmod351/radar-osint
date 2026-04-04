@@ -28,6 +28,7 @@ export const OP_DIR = `${RESULTS_BASE}/${TARGET}`;
 
 
  export    const criticalKeywords = [
+   "gov","gob","policia","salud","banco",
 "sistemas","system", "staging",
         "svn", "git", "api", "dev", "stg", "test", "mail",
         "vpn", "admin", "db", "ssh", "backup", "internal"
