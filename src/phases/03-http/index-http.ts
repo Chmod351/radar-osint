@@ -6,18 +6,18 @@ import { normalizeHttpIntel } from "../../shared/helper.ts";
 
 
 export const normalizedIntel: HttpIntel={
-protocol:"Unknown",
-status:0,
-security:{
-hsts:false,
-csp:false,
-xfo:false,
-nosniff:false,
-},server:"Unknown",
-poweredBy:"Unknown",
-cookies:"N/A",
-error:"",
-}
+  protocol:"Unknown",
+  status:0,
+  security:{
+    hsts:false,
+    csp:false,
+    xfo:false,
+    nosniff:false,
+  },server:"Unknown",
+  poweredBy:"Unknown",
+  cookies:"N/A",
+  error:"",
+};
 export async function fingerprintingPhase(target: AnalyzedTarget): Promise<AnalyzedTarget> {
   const host = target.host;
 
@@ -28,7 +28,7 @@ export async function fingerprintingPhase(target: AnalyzedTarget): Promise<Analy
       scanPortsSafe(host),
     ]);
     
-    const httpIntelNormalized=normalizeHttpIntel(httpData.http_intel as HttpIntel)
+    const httpIntelNormalized=normalizeHttpIntel(httpData.http_intel as HttpIntel);
     return {
       ...target,
       http_intel: httpIntelNormalized || normalizedIntel,
@@ -38,6 +38,6 @@ export async function fingerprintingPhase(target: AnalyzedTarget): Promise<Analy
   } catch (error: any) {
     logger.error("PHASE-03", `Fallo crítico analizando ${host}: ${error.message}`);
 
-    return { ...target, http_intel:{...normalizedIntel,error:error.message??"Fallo el fingerprinting"},http_stack:target.http_stack, open_ports:target.open_ports};
+    return { ...target, http_intel:{ ...normalizedIntel,error:error.message??"Fallo el fingerprinting" },http_stack:target.http_stack, open_ports:target.open_ports };
   }
 }

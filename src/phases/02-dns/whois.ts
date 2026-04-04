@@ -10,14 +10,14 @@ import type { WhoisIntel } from "../../shared/types.ts";
 const whoisCache = new Map<string, WhoisIntel>();
 
 export const emptyWhois: WhoisIntel = {
-    registrar: "N/A",
-    creationDate: "N/A",
-    expirationDate: "N/A",
-    nameServers: [],
-    status: [],
-    emails: "N/A",
-    raw: "",
-  }; 
+  registrar: "N/A",
+  creationDate: "N/A",
+  expirationDate: "N/A",
+  nameServers: [],
+  status: [],
+  emails: "N/A",
+  raw: "",
+}; 
 
 /**
  * 1. OBTENER DOMINIO RAÍZ

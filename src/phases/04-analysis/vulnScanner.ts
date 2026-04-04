@@ -129,7 +129,7 @@ export async function httpPhaseAndVulnerabilityPhaseMerger(enrichedItem: Analyze
       const isNoise = noise.includes(tech.name);
       if (!isNoise) {
         const techQuery = `${tech.name} ${tech.version !== "unknown" ? tech.version : ""}`;
-        logger.warn("VULNERABILITY", `Buscando vulnerabilidad para :${techQuery}`)
+        logger.warn("VULNERABILITY", `Buscando vulnerabilidad para :${techQuery}`);
         const results = await findExploits(techQuery);
         techExploits = [...techExploits, ...results];
       }

@@ -46,7 +46,7 @@ export function normalizeTarget(raw: AnalyzedTarget): AnalyzedTarget {
 
     // Si no hay datos, devolvemos null explícito, no un campo faltante
     http_intel: raw.http_intel ? normalizeHttpIntel(raw.http_intel) : normalizedIntel,
-  whois: (typeof raw.whois === "object" && raw.whois !== null) 
-  ? raw.whois 
-  : (typeof raw.whois_raw === "string" ? normalizeWhois(raw.whois_raw) : emptyWhois)}
+    whois: (typeof raw.whois === "object" && raw.whois !== null) 
+      ? raw.whois 
+      : (typeof raw.whois_raw === "string" ? normalizeWhois(raw.whois_raw) : emptyWhois) };
 }
