@@ -29,7 +29,6 @@ const sortedReport = finalReport.sort((a, b) => {
       ? item.open_ports.map(p => `${p.port}/${p.service}`).join(", ")
       : "--";
    
-
     const sec = intel.security  || { hsts: false };
     
     // Usamos las funciones que ya corregiste
