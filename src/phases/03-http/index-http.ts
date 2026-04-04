@@ -5,7 +5,7 @@ import type { AnalyzedTarget, HttpIntel } from "../../shared/types";
 import { normalizeHttpIntel } from "../../shared/helper.ts";
 
 
-const normalizedIntel: HttpIntel={
+export const normalizedIntel: HttpIntel={
 protocol:"Unknown",
 status:0,
 security:{
