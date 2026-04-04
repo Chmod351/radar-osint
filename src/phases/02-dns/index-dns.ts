@@ -3,6 +3,7 @@ import { getASNInfo } from "./ansLookup.ts";
 import { getWhoisIntel } from "./whois.ts";
 import { withRetry } from "../../shared/retry.ts";
 import type { AnalyzedTarget } from "../../shared/types.ts";
+import { logger } from "../../shared/errorLogger.ts";
 
 // Agregamos un límite para la Fase 2 también, para que sea rápida
 
@@ -32,6 +33,7 @@ export async function dnsPhaseStream(subdomain: string): Promise<AnalyzedTarget 
 
     return analyzed;
   } catch (error: any) {
+    logger.error("DNS-PHASE", `${error}`);
     return null;
   }
 }

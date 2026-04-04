@@ -36,13 +36,12 @@ export async function resolveSingleDomain(domain: string): Promise<ResolvedDomai
     if (!stdout.trim()) return null;
 
     const data = JSON.parse(stdout);
-    logger.debug("RESOLVER DOMAIN:",JSON.stringify(data))
     return {
       host: data.host,
       ip: data.a?.[0] || "0.0.0.0",
     };
   } catch (e) {
-    logger.error("RESOLVER-SINGLE-DOMAIN", `${e}`)
+    logger.error("RESOLVER-SINGLE-DOMAIN", `${e}`);
     // No logueamos error aquí para no ensuciar si el dominio simplemente no existe
     return null;
   }
@@ -81,7 +80,7 @@ export async function enrichWebData(host: string): Promise<WebMetadata> {
       cdn: (data.web_server || data.server || "").toLowerCase().includes("cloudflare") ? "cloudflare" : "none"
     };  } catch (e) {
     // Fallback: Si falla el escaneo profundo, devolvemos lo básico
-    logger.error("ENRICH", `${host} fallo con error: ${e}, mandando fallback`)
+    logger.error("ENRICH", `${host} fallo con error: ${e}, mandando fallback`);
     return {
       url: `http://${host}`,
       status_code: 0,
@@ -102,7 +101,7 @@ export function classifyTarget(domainData: any) {
     "fastly", "ovh", "digitalocean", "linode", "vercel", "github"
   ];
  
-  const fingerprint=`${domainData.ip}_${domainData.status_code}_${domainData.title}`
+  const fingerprint=`${domainData.ip}_${domainData.status_code}_${domainData.title}`;
   const asnOwner = domainData.asn_owner?.toLowerCase() || domainData.asn?.toLowerCase() || "";
   const isCloud = cloudKeywords.some(key => asnOwner.includes(key));
 
@@ -114,10 +113,10 @@ export function classifyTarget(domainData: any) {
      action:"DUPLICATE_ALIAS",
      whois:undefined,
      vulnerabilities: [],
-    }
+    };
     
   }
-  globalFingerprints.add(fingerprint)
+  globalFingerprints.add(fingerprint);
 
   return {
     ...domainData,

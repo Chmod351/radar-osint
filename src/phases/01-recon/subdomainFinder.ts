@@ -5,7 +5,6 @@ import { logger } from "../../shared/errorLogger.ts";
 
 async function* runSubdomainStream(cmd: string, args: string[]): AsyncIterable<string> {
 
-  logger.debug("RUN-SUBDOMAINS-STREAM", `arg: ${args} cmd:${cmd}`)
   try {
     const childProcess = execa(cmd, args, {
       stdout: "pipe",
@@ -58,8 +57,6 @@ export async function* streamAllSubdomains(target: string): AsyncIterable<string
   const outputQueue: string[] = [];
   let activeSources = sources.length;
 
-  logger.debug("OUTPUTQUEUE", `${outputQueue.length}`)
-  
   // Mecanismo de señalización para despertar al generador
   let signalResolver: (() => void) | null = null;
 
@@ -86,7 +83,7 @@ export async function* streamAllSubdomains(target: string): AsyncIterable<string
         signalResolver();
         signalResolver = null;
       }
-      logger.debug("RECON", `Fuente ${source.name} completada.`);
+      logger.info("RECON", `Fuente ${source.name} completada.`);
     }
   });
 

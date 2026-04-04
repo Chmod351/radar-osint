@@ -33,8 +33,8 @@ export async function getASNInfo(ip: string): Promise<ASNIntel> {
     }
   } catch (e: any) {
     // Si el error es NXDOMAIN, la IP no tiene ASN asociado 
-    if (e.code !== 'ENOTFOUND') {
-      logger.debug("ASN-LOOKUP", `No se encontró registro para ${ip}`);
+    if (e.code !== "ENOTFOUND") {
+      logger.info("ASN-LOOKUP", `No se encontró registro para ${ip}`);
     }
   }
 
