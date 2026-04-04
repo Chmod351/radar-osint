@@ -8,6 +8,17 @@ import type { WhoisIntel } from "../../shared/types.ts";
  * durante todo el streaming del Radar.
  */
 const whoisCache = new Map<string, WhoisIntel>();
+
+export const emptyWhois: WhoisIntel = {
+    registrar: "N/A",
+    creationDate: "N/A",
+    expirationDate: "N/A",
+    nameServers: [],
+    status: [],
+    emails: "N/A",
+    raw: "",
+  }; 
+
 /**
  * 1. OBTENER DOMINIO RAÍZ
  * 
@@ -83,15 +94,7 @@ export function normalizeWhois(rawText: string) {
  */
 export async function getWhoisIntel(host: string): Promise<WhoisIntel> {
   const root = getRootDomain(host);
-  const emptyWhois: WhoisIntel = {
-    registrar: "N/A",
-    creationDate: "N/A",
-    expirationDate: "N/A",
-    nameServers: [],
-    status: [],
-    emails: "N/A",
-    raw: "",
-  }; 
+  
   // Check de caché instantáneo
 
   if (whoisCache.has(root)) {
