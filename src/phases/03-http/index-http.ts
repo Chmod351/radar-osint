@@ -27,7 +27,7 @@ export async function fingerprintingPhase(target: AnalyzedTarget): Promise<Analy
       http_intel: httpData.http_intel,
       http_stack: httpData.http_stack,
       open_ports: openPorts || [],
-      phase: 3 // Marcamos que pasó la fase de fingerprinting
+      phase: 3 
     };
   } catch (error: any) {
     logger.error("PHASE-03", `Fallo crítico analizando ${host}: ${error.message}`);
