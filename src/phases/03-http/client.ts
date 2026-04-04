@@ -57,7 +57,7 @@ export class WhatWebService {
     }
   }
 
-private parsePlugins(plugins: WhatWebRawResponse): Technology[] {
+  private parsePlugins(plugins: WhatWebRawResponse): Technology[] {
     return Object.entries(plugins)
       .filter(([name]) => !this.noise.includes(name))
       .map(([name, details]): Technology => {
@@ -75,7 +75,7 @@ private parsePlugins(plugins: WhatWebRawResponse): Technology[] {
       })
       .filter(t => 
         t.version !== "unknown" || 
-        ["Nginx", "Apache", "PHP", "WordPress", "Docker", "Cloudflare", "Laravel"].includes(t.name)
+        ["Nginx", "Apache", "PHP", "WordPress", "Docker", "Cloudflare", "Laravel"].includes(t.name),
       );
   }
 }
