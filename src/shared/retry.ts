@@ -30,14 +30,14 @@ export async function withRetry<T>(
       lastError = error;
 
       //  No reintentar si el error es definitivo (NXDOMAIN / ENOTFOUND)
-      if (error.code === 'ENOTFOUND' || error.code === 'EAI_NONAME') {
+      if (error.code === "ENOTFOUND" || error.code === "EAI_NONAME") {
         throw error;
       }
 
       // Si es el último intento, no esperamos más
       if (i === retries - 1) break;
 
-      logger.debug("RESILIENCE", `Fallo en ${taskName} (intento ${i + 1}/${retries}). Reintentando en ${currentDelay}ms...`);
+      logger.error("RESILIENCE", `Fallo en ${taskName} (intento ${i + 1}/${retries}). Reintentando en ${currentDelay}ms...`);
       
       await Bun.sleep(currentDelay);
       
