@@ -1,5 +1,6 @@
 import { execa } from "execa";
 import { logger } from "../../shared/errorLogger.ts";
+import type { WhoisIntel } from "../../shared/types.ts";
 
 /**
  * CACHÉ GLOBAL DE WHOIS
@@ -18,11 +19,13 @@ export function getRootDomain(host: string): string {
   // Manejo de TLDs compuestos (ar, cl, co.uk, etc)
   const last = parts[parts.length - 1];
   const prev = parts[parts.length - 2];
+  if (last && prev) {
+     if (last.length <= 2 && prev.length <= 3) {
+      return parts.slice(-3).join(".");
+     }
   
-  if (last.length <= 2 && prev.length <= 3) {
-    return parts.slice(-3).join(".");
+  return parts.slice(-2).join(".");
   }
-  
   return parts.slice(-2).join(".");
 }
 
@@ -33,10 +36,10 @@ export function getRootDomain(host: string): string {
 function parseWhoisAgnostic(rawText: string) {
   const lines = rawText.split("\n");
   const json: any = {};
-
   for (const line of lines) {
     if (line.startsWith("%") || line.startsWith("#") || !line.includes(":")) continue;
     const [rawKey, ...valueParts] = line.split(":");
+    if (rawKey) {
     const key = rawKey.trim().toLowerCase().replace(/\s+/g, "_");
     const value = valueParts.join(":").trim();
     if (!value) continue;
@@ -45,7 +48,9 @@ function parseWhoisAgnostic(rawText: string) {
       json[key] = Array.isArray(json[key]) ? [...json[key], value] : [json[key], value];
     } else {
       json[key] = value;
-    }
+    }  
+    } continue
+    
   }
   return json;
 }
@@ -53,7 +58,7 @@ function parseWhoisAgnostic(rawText: string) {
 /**
  * 3. NORMALIZADOR 
 * */
-function normalizeWhois(rawText: string) {
+export function normalizeWhois(rawText: string) {
   const data = parseWhoisAgnostic(rawText);
   const get = (k: string) => Array.isArray(data[k]) ? data[k][0] : data[k];
   const getAll = (k: string) => {
@@ -76,16 +81,22 @@ function normalizeWhois(rawText: string) {
  * 4. FUNCIÓN ATÓMICA 
  * * .
  */
-export async function getWhoisIntel(host: string): Promise<any | null> {
+export async function getWhoisIntel(host: string): Promise<WhoisIntel> {
   const root = getRootDomain(host);
-
+    const emptyWhois: WhoisIntel = {
+    registrar: "N/A",
+    creationDate: "N/A",
+    expirationDate: "N/A",
+    nameServers: [],
+    status: [],
+    emails: "N/A",
+    raw: ""
+  }; 
   // Check de caché instantáneo
 
  if (whoisCache.has(root)) {
-    logger.debug("WHOIS", `Usando caché para ${host} (root: ${root})`);
     return whoisCache.get(root);
   }
-logger.debug("CHECKING WHO IS REQUEST", `target of who is: ${root} and whois cache is: ${whoisCache}`)
 try {
     // Intentamos ejecutar whois con un timeout agresivo
     // Si el puerto 43 está cerrado, esto fallará rápido
@@ -94,7 +105,7 @@ try {
       reject: true // Queremos capturar el error en el catch
     });
 
-    if (!stdout || stdout.includes("No match for")) return null;
+    if (!stdout || stdout.includes("No match for")) return emptyWhois;
 
     const parsed = normalizeWhois(stdout);
     whoisCache.set(root, parsed);
@@ -103,6 +114,9 @@ try {
     // Silent fail: Si no hay conexión o el comando falla, 
     // no bloqueamos el flujo, simplemente devolvemos null.
     // Esto evita el spam de "Connection refused".
-    return null; 
+    //
+
+    logger.error("WHO-IS", `${error}`);
+    return emptyWhois;
   }
 }
