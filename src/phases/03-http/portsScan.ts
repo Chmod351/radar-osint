@@ -10,7 +10,7 @@ import { getErrorMessage } from "../../shared/utils.ts";
  */
 
 const MAX_NMAP_CONCURRENCY = 1;
-const active: Promise<any>[] = []; 
+const active: Promise<unknown>[] = []; 
 
 // EVITA QUE SE QUEME EL PC
 async function runWithNmapLimit<T>(fn: () => Promise<T>): Promise<T> {
