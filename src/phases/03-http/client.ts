@@ -94,9 +94,61 @@ async function analyzeHeaders(url: string) {
       cookies: response.headers.get("set-cookie") ? "Present" : "None",
     };
   } catch (e: any) {
-    logger.error("HEADERS", `${e}`);
+ return   await headersFallback(url)
+      
+  }
+}
+
+
+async function headersFallback(url:string) {
+  try {
+    const agent :string =getRandomAgent() ?? "Mozilla/5.0 (Radar/1.0)"
+   const { stdout, stderr } = await execa("curl", [
+      "-I",                      // Solo headers
+      "-s",                      // Silent
+      "-L",                      // Seguir redirecciones
+      "-k",                      
+      "--max-time", "10",
+      "-A", agent,
+      url
+    ], { reject: false });
+    if (!stdout) {
+      throw new Error(`Curl no devolvio headers:${stderr}`)
+    }
+    const headersRaw = stdout.split("\r\n")
+    const headers: Record<string,string>={}; 
+
+headersRaw.forEach(line => {
+      const parts = line.split(": ");
+      if (parts.length >= 2 && parts[0]) {
+        const key = parts[0].toLowerCase();
+        const value = parts.slice(1).join(": ").trim();
+        headers[key] = value;
+      }
+    });
+    const statusLine=headersRaw[0]
+    const statusParts = statusLine ? statusLine.split(" "): [];
+    const statusCode = statusParts.length>=2 && statusParts[1] ? parseInt(statusParts[1]):0
+
+    return {
+      protocol: new URL(url).protocol,
+      status: isNaN(statusCode) ? 0 : statusCode,
+      security: {
+        hsts: !!headers["strict-transport-security"],
+        csp: !!headers["content-security-policy"],
+        xfo: !!headers["x-frame-options"],
+        nosniff: !!headers["x-content-type-options"],
+      },
+      server: headers["server"] || "Unknown",
+      poweredBy: headers["x-powered-by"] || headers["server"] || "N/A",
+      cookies: headers["set-cookie"] ? "Present" : "None",
+    };
+  } catch (e) {
+    /* handle error */
+    logger.error("HEADERS-CURL", `${url} -> ${e}`);
     return { error: "Unreachable", status: 0 };
   }
+  
 }
 
 /**
