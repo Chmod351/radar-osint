@@ -1,7 +1,8 @@
 import { execa } from "execa";
 import { logger } from "../../shared/errorLogger.ts";
-import { getErrorMessage } from "../../shared/utils.ts";
+import { CDN_PROVIDERS, getErrorMessage, SENSORS } from "../../shared/utils.ts";
 import type { AnalyzedTarget } from "../../shared/types.ts";
+import { emptyWhois } from "./whois.ts";
 
 
 export interface ResolvedDomain {
@@ -12,9 +13,9 @@ export interface ResolvedDomain {
 export interface WebMetadata {
   url: string;
   status_code: number;
-  title: string;
-  webserver: string;
-  cdn: string;
+  title: string|null;
+  webserver: string |null;
+  cdn: number | null;
 }
 
 /**
@@ -70,6 +71,29 @@ export async function enrichWebData(host: string): Promise<WebMetadata> {
     if (!stdout.trim()) throw new Error("No web response");
 
     const data = JSON.parse(stdout);
+   
+
+    let cdn: number = CDN_PROVIDERS.NONE;
+    const serverHeader = (data.web_server || data.server || "").toLowerCase();
+
+    // 2. Mapeo de firmas (Fácil de expandir)
+    const signatures: Record<string, number> = {
+      "cloudflare": CDN_PROVIDERS.CLOUDFLARE,
+      "akamai":     CDN_PROVIDERS.AKAMAI,
+      "cloudfront": CDN_PROVIDERS.CLOUDFRONT,
+      "fastly":     CDN_PROVIDERS.FASTLY,
+      "incapsula":  CDN_PROVIDERS.INCAPSULA,
+      "sucuri":     CDN_PROVIDERS.UNKNOWN_CDN, 
+    };
+
+    // Buscamos la firma en el header 'server'
+    for (const [key, value] of Object.entries(signatures)) {
+      if (serverHeader.includes(key)) {
+        cdn = value;
+        break; 
+      }
+    }
+
 
     
     
@@ -79,7 +103,7 @@ export async function enrichWebData(host: string): Promise<WebMetadata> {
       status_code: data.status_code || data["status-code"] || 0,
       title: data.title || "N/A",
       webserver: data.web_server || data.server || data.webserver || "N/A",
-      cdn: (data.web_server || data.server || "").toLowerCase().includes("cloudflare") ? "cloudflare" : "none",
+      cdn: cdn,
     };  } catch (e) {
     // Fallback: Si falla el escaneo profundo, devolvemos lo básico
     logger.error("ENRICH", `${host} fallo con error: ${e}, mandando fallback`);
@@ -88,7 +112,7 @@ export async function enrichWebData(host: string): Promise<WebMetadata> {
       status_code: 0,
       title: "N/A",
       webserver: "N/A",
-      cdn: "none",
+      cdn: CDN_PROVIDERS.NONE,
     };
   }
 }
@@ -97,7 +121,7 @@ export async function enrichWebData(host: string): Promise<WebMetadata> {
  * 3. CLASIFICADOR DE TARGET 
  *  para decidir qué hacer con el target.
  */
-export function classifyTarget(domainData: AnalyzedTarget) {
+export function classifyTarget(domainData: AnalyzedTarget):AnalyzedTarget {
   const cloudKeywords = [
     "amazon", "google", "microsoft", "cloudflare", "akamai",
     "fastly", "ovh", "digitalocean", "linode", "vercel", "github",
@@ -110,10 +134,10 @@ export function classifyTarget(domainData: AnalyzedTarget) {
   if (globalFingerprints.has(fingerprint)) {
     return {
       ...domainData,
-      priority:"LOW",
-      infra_type:isCloud?"Cloud/CDN":"P/Self-H",
-      action:"DUPLICATE_ALIAS",
-      whois:undefined,
+      priority:SENSORS.PRIORITY.LOW,
+      infra_type:isCloud ? SENSORS.INFRA_TYPE.CLOUD: SENSORS.INFRA_TYPE.SELF_HOSTED,
+      action:SENSORS.ACTION.DUPLICATE,
+      whois:emptyWhois,
       vulnerabilities: [],
     };
     
@@ -122,10 +146,10 @@ export function classifyTarget(domainData: AnalyzedTarget) {
 
   return {
     ...domainData,
-    priority: isCloud ? "LOW" : "HIGH",
-    infra_type: isCloud ? "Cloud/CDN" : "P/Self-H",
-    action: isCloud ? "SKIP_DEEP" : "SCAN_READY",
-    whois:undefined,
+    priority: isCloud ? SENSORS.PRIORITY.LOW : SENSORS.PRIORITY.HIGH,
+    infra_type: isCloud ? SENSORS.INFRA_TYPE.CLOUD: SENSORS.INFRA_TYPE.SELF_HOSTED,
+    action: isCloud ? SENSORS.ACTION.SKIP : SENSORS.ACTION.READY,
+    whois:emptyWhois,
     vulnerabilities: [],
   };
 }
