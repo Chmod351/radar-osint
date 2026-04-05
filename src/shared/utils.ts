@@ -25,14 +25,15 @@ export const criticalKeywords:string[] = [
 ];
 
 export const PHASES={
-ORCHESTRATOR:"ORCHESTRATOR",
+  ORCHESTRATOR:"ORCHESTRATOR",
+  RECON:"RECON",
 }as const;
 
 export const LOGGER={
-ERROR:0,
-WARN:1,
-INFO:2,
-DEBUG:3
+  ERROR:0,
+  WARN:1,
+  INFO:2,
+  DEBUG:3,
 }as const;
 
 
@@ -48,7 +49,7 @@ export const SENSORS = {
     MANAGED: 2,
     VULNERABLE: 3,
     REVIEW_REQUIRED: 4,
-    SECURE: 5
+    SECURE: 5,
   },
   PRIORITY: {
     LOW: 0,
@@ -60,8 +61,8 @@ export const SENSORS = {
     SCAN_FAILED: 0,
     DUPLICATE: 1,
     SKIP: 2,
-    READY: 3
-  }
+    READY: 3,
+  },
 } as const;
 
 export const PROTOCOLS = {
@@ -72,7 +73,9 @@ export const PROTOCOLS = {
   FTP: 4,
   DNS: 5,
   DATABASE: 6,
-  MAIL: 7 // SMTP/IMAP
+  MAIL: 7, // SMTP/IMAP
+  TCP:8,
+  UDP:9,
 } as const;
 
 export const CDN_PROVIDERS = {
@@ -82,7 +85,7 @@ export const CDN_PROVIDERS = {
   CLOUDFRONT: 3,
   FASTLY: 4,
   INCAPSULA: 5,
-  UNKNOWN_CDN: 99
+  UNKNOWN_CDN: 99,
 } as const;
 
 
