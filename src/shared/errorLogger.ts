@@ -1,6 +1,6 @@
 import { LOGGER } from "./utils";
 
-const colors=["\x1b[31m","\x1b[33m","\x1b[36m","\x1b[90m","\x1b[0m"]
+const colors=["\x1b[31m","\x1b[33m","\x1b[36m","\x1b[90m","\x1b[0m"];
 class Logger {
   private isTest = process.env.NODE_ENV === "test";
 
