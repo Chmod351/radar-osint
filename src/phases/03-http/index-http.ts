@@ -3,27 +3,28 @@ import {  scanPortsSafe } from "./portsScan.ts";
 import { logger } from "../../shared/errorLogger.ts";
 import type { AnalyzedTarget, HttpIntel } from "../../shared/types";
 import { normalizeHttpIntel } from "../../shared/helper.ts";
-import { getErrorMessage } from "../../shared/utils.ts";
+import { getErrorMessage, PROTOCOLS } from "../../shared/utils.ts";
 
 
 export const normalizedIntel: HttpIntel={
-  protocol:"Unknown",
+  protocol: PROTOCOLS.UNKNOWN,
   status:0,
   security:{
     hsts:false,
     csp:false,
     xfo:false,
     nosniff:false,
-  },server:"Unknown",
-  poweredBy:"Unknown",
-  cookies:"N/A",
-  error:"",
+  },server:null,
+  poweredBy:null,
+  cookies:false,
+  error:null,
 };
 export async function fingerprintingPhase(target: AnalyzedTarget): Promise<AnalyzedTarget> {
   const host = target.host;
 
   try {
     // Disparamos las 2 consultas en paralelo para este host específico
+
     const [httpData, openPorts] = await Promise.all([
       getWebIntel(target.url),
       scanPortsSafe(host),
