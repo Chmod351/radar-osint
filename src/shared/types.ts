@@ -5,8 +5,8 @@ export interface Technology {
 
 export interface OpenPort {
   port: number;
-  service: string;
-  protocol: "tcp" |"udp"
+  service: string |null;
+  protocol: number
 }
 export interface WhoisIntel {
   registrar: string |null;
@@ -26,7 +26,7 @@ export interface SecurityHeaders {
 }
 
 export interface HttpIntel {
-  protocol: string |null;
+  protocol: number |null;
   status: number;
   security: SecurityHeaders;
   server: string |null;
@@ -41,17 +41,24 @@ version:string,
 product:string,
 }
 
-export interface AnalyzedTarget {
+export interface ASNIntel extends ASNinAnalyzedTarget {
+   prefix: string |null;
+}
+
+interface ASNinAnalyzedTarget{
+  asn: string |null ;
+  country: string |null; 
+}
+
+export interface AnalyzedTarget extends ASNinAnalyzedTarget {
   // Datos de Red e Infraestructura
-  host: string;
+  host: string
   ip: string;
-  asn: string |null;
   asn_owner: string |null;
-  country: string | null;
   url: string;
   
   // Metas detectados
-  status_code: number | string;
+  status_code: number;
   title: string |null;
   webserver: string |null;
   cdn: number | null;
