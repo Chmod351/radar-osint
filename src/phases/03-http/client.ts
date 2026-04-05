@@ -1,7 +1,9 @@
-import { getErrorMessage, USER_AGENTS } from "../../shared/utils.ts";
+import { getErrorMessage, PROTOCOLS, USER_AGENTS } from "../../shared/utils.ts";
 import { logger } from "../../shared/errorLogger.ts";
 import { execa } from "execa";
 import { unlink, readFile } from "node:fs/promises";
+import type {  HttpIntel } from "../../shared/types.ts";
+import { normalizedIntel } from "./index-http.ts";
 
 export interface Technology {
   name: string;
@@ -87,7 +89,7 @@ const scanner = new WhatWebService();
  */
 const getRandomAgent = () => USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)] || USER_AGENTS[0];
 
-async function analyzeHeaders(url: string) {
+async function analyzeHeaders(url: string):Promise<HttpIntel> {
   try {
     const agent = getRandomAgent();
     const controller = new AbortController();
@@ -102,9 +104,9 @@ async function analyzeHeaders(url: string) {
 
     clearTimeout(id);
     const headers = Object.fromEntries(response.headers.entries());
-
+    
     return {
-      protocol: new URL(url).protocol,
+      protocol:url.startsWith("http") ? PROTOCOLS.HTTP:PROTOCOLS.HTTPS,
       status: response.status,
       security: {
         hsts: !!headers["strict-transport-security"],
@@ -112,9 +114,9 @@ async function analyzeHeaders(url: string) {
         xfo: !!headers["x-frame-options"],
         nosniff: !!headers["x-content-type-options"],
       },
-      server: headers["server"] || "Unknown",
-      poweredBy: headers["x-powered-by"] || headers["server"] || "N/A",
-      cookies: response.headers.get("set-cookie") ? "Present" : "None",
+      server: headers["server"] || null,
+      poweredBy: headers["x-powered-by"] || headers["server"] || null,
+      cookies: !!response.headers.get("set-cookie") 
     };
   } catch (error: unknown) {
     
@@ -126,7 +128,7 @@ async function analyzeHeaders(url: string) {
 }
 
 
-async function headersFallback(url:string) {
+async function headersFallback(url:string) :Promise<HttpIntel>{
   try {
     const agent :string =getRandomAgent() ?? "Mozilla/5.0 (Radar/1.0)";
     const { stdout, stderr } = await execa("curl", [
@@ -157,7 +159,7 @@ async function headersFallback(url:string) {
     const statusCode = statusParts.length>=2 && statusParts[1] ? parseInt(statusParts[1]):0;
 
     return {
-      protocol: new URL(url).protocol,
+      protocol: url.startsWith("http") ? PROTOCOLS.HTTP:PROTOCOLS.HTTPS,
       status: isNaN(statusCode) ? 0 : statusCode,
       security: {
         hsts: !!headers["strict-transport-security"],
@@ -165,14 +167,17 @@ async function headersFallback(url:string) {
         xfo: !!headers["x-frame-options"],
         nosniff: !!headers["x-content-type-options"],
       },
-      server: headers["server"] || "Unknown",
-      poweredBy: headers["x-powered-by"] || headers["server"] || "N/A",
-      cookies: headers["set-cookie"] ? "Present" : "None",
+      server: headers["server"] || null,
+      poweredBy: headers["x-powered-by"] || headers["server"] || null,
+      cookies: !!headers["set-cookie"] 
     };
   } catch (error:unknown) {
     /* handle error */
     logger.error("HEADERS-CURL", getErrorMessage(error));
-    return { error: "Unreachable", status: 0 };
+    return { ...normalizedIntel,
+      error: getErrorMessage(error), 
+      status: 0 
+    };
   }
   
 }
