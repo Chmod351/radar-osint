@@ -1,20 +1,20 @@
 export interface Technology {
   name: string;
-  version: string;
+  version: string|null;
 }
 
 export interface OpenPort {
   port: number;
   service: string;
-  protocol: string;
+  protocol: "tcp" |"udp"
 }
 export interface WhoisIntel {
-  registrar: string;
-  creationDate: string;
-  expirationDate: string;
+  registrar: string |null;
+  creationDate: string |null;
+  expirationDate: string |null;
   nameServers: string[];
   status: string[];
-  emails: string;
+  emails: string |null;
   raw: string; 
 }
 
@@ -26,12 +26,12 @@ export interface SecurityHeaders {
 }
 
 export interface HttpIntel {
-  protocol: string;
+  protocol: string |null;
   status: number;
   security: SecurityHeaders;
-  server: string;
-  poweredBy: string;
-  cookies: string;
+  server: string |null;
+  poweredBy: string |null;
+  cookies: boolean;
   error?: string | null;
 }
 
@@ -45,20 +45,20 @@ export interface AnalyzedTarget {
   // Datos de Red e Infraestructura
   host: string;
   ip: string;
-  asn: string;
-  asn_owner: string;
-  country: string;
+  asn: string |null;
+  asn_owner: string |null;
+  country: string | null;
   url: string;
   
   // Metas detectados
   status_code: number | string;
-  title: string;
-  webserver: string;
-  cdn: string;
-  infra_type: "Cloud/CDN" | "P/Self-H" | "Unknown";
+  title: string |null;
+  webserver: string |null;
+  cdn: number | null;
+  infra_type: number;
   // Inteligencia y Análisis
-  priority: "HIGH" | "LOW" | "CRITICAL"|"MEDIUM";
-  action: "SCAN_READY" | "SKIP_DEEP" | "DUPLICATE_ALIAS" | "SCAN_FAILED"
+  priority: number;
+  action: number;
   
   // Datos de Fase 3 (Opcionales hasta que pase por la fase)
   http_intel: HttpIntel;
@@ -67,11 +67,11 @@ export interface AnalyzedTarget {
 
   // Datos de Fase 4
   vulnerabilities: SearchSploitResult[]
-  infra_status:string,
-  app_status:string,
+  infra_status:number;
+  app_status:boolean;
 
   whois: WhoisIntel;
-  whois_raw: string;
+  whois_raw: string | null
 }
 
 
