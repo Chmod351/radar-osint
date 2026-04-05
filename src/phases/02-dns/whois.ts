@@ -12,12 +12,12 @@ const whoisCache = new Map<string, WhoisIntel>();
 
 type WhoisRawData = Record<string, string | string[]>;
 export const emptyWhois: WhoisIntel = {
-  registrar: "N/A",
-  creationDate: "N/A",
-  expirationDate: "N/A",
+  registrar: null,
+  creationDate: null,
+  expirationDate: null,
   nameServers: [],
   status: [],
-  emails: "N/A",
+  emails: null,
   raw: "",
 }; 
 
