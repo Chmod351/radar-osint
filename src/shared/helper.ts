@@ -1,12 +1,13 @@
 import { emptyWhois, normalizeWhois } from "../phases/02-dns/whois";
 import { normalizedIntel } from "../phases/03-http/index-http";
 import type { AnalyzedTarget, HttpIntel } from "./types";
+import { CDN_PROVIDERS, SENSORS } from "./utils";
 
 
-export function normalizeHttpIntel(raw:HttpIntel) {
+export function normalizeHttpIntel(raw:HttpIntel):HttpIntel {
   if (!raw) return normalizedIntel;
   return {
-    protocol:raw.protocol||"Unknown",
+    protocol:raw.protocol||null,
     status: Number(raw.status) ||0,
     security:{
       hsts: Boolean(raw.security?.hsts),
@@ -14,10 +15,10 @@ export function normalizeHttpIntel(raw:HttpIntel) {
       xfo: Boolean(raw.security?.xfo),
       nosniff: Boolean(raw.security?.nosniff),
     },
-    server:raw.server || "Unknown",
-    poweredBy:raw.poweredBy|| "Unknown",
-    cookies:raw.cookies||"N/A",
-    error:raw.error || "",
+    server:raw.server || null,
+    poweredBy:raw.poweredBy|| null,
+    cookies:raw.cookies || false,
+    error:raw.error || null,
   }; 
 }
 export function normalizeTarget(raw: AnalyzedTarget|null): AnalyzedTarget {
@@ -25,50 +26,50 @@ export function normalizeTarget(raw: AnalyzedTarget|null): AnalyzedTarget {
   // Si es nulo, generamos el "Grado Cero" del objeto para que el resto del sistema no explote
   if (!raw) {
     return {
-      host: "unknown",
+      host: null,
       ip: "0.0.0.0",
-      app_status: "❌",
-      url: "",
+      app_status: false,
+      url: null,
       status_code: 0,
-      title: "N/A",
-      webserver: "N/A",
-      cdn: "none",
-      infra_type: "Unknown",
-      infra_status: "🔴 ERROR",
-      priority: "LOW",
-      action: "SCAN_FAILED",
+      title: null,
+      webserver: null,
+      cdn: CDN_PROVIDERS.NONE,
+      infra_type: SENSORS.INFRA_TYPE.UNKNOWN,
+      infra_status: SENSORS.INFRA_STATUS.NOT_AVAILABLE,
+      priority: SENSORS.PRIORITY.LOW,
+      action: SENSORS.ACTION.SCAN_FAILED,
       http_stack: [],
       open_ports: [],
       vulnerabilities: [],
       http_intel: normalizedIntel,
       whois: emptyWhois,
-      asn: "N/A",
-      asn_owner: "N/A",
-      country: "N/A",
-      whois_raw: "N/A",
+      asn: null,
+      asn_owner: null,
+      country: null,
+      whois_raw: null,
     };
   }
 
   // Si no es nulo, aplicamos tu lógica de limpieza habitual
 
   return {
-    host: raw.host || "unknown",
+    host: raw.host || null,
     ip: raw.ip || "0.0.0.0",
 
-    app_status:raw.app_status || "✅",
-    whois_raw:raw.whois_raw  || "N/A",
-    asn: raw.asn || "N/A",
-    asn_owner: raw.asn_owner || "N/A",
-    country: raw.country || "N/A",
-    url: raw.url || "",
+    app_status:raw.app_status ?? true,
+    whois_raw:raw.whois_raw  || null,
+    asn: raw.asn || null,
+    asn_owner: raw.asn_owner || null,
+    country: raw.country || null,
+    url: raw.url || null,
     status_code: Number(raw.status_code) || 0,
-    title: raw.title || "N/A",
-    webserver: raw.webserver || "N/A",
-    cdn: raw.cdn || "none",
-    infra_type: raw.infra_type || "Unknown",
-    infra_status:raw.infra_status ||"⚪ N/A",
-    priority: raw.priority || "⚪ LOW",
-    action: raw.action || "SCAN_READY",
+    title: raw.title || null,
+    webserver: raw.webserver || null,
+    cdn: raw.cdn || CDN_PROVIDERS.NONE,
+    infra_type: raw.infra_type || SENSORS.INFRA_TYPE.UNKNOWN,
+    infra_status:raw.infra_status ||SENSORS.INFRA_STATUS.REVIEW_REQUIRED,
+    priority: raw.priority ||SENSORS.PRIORITY.LOW,
+    action: raw.action || SENSORS.ACTION.READY,
 
     // Aquí está la magia: fallback a array vacío para evitar TypeErrors
     http_stack: Array.isArray(raw.http_stack) ? raw.http_stack : [],
