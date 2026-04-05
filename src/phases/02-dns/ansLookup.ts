@@ -1,19 +1,15 @@
 import { resolveTxt } from "node:dns/promises";
 import { logger } from "../../shared/errorLogger.ts";
 import { getErrorMessage } from "../../shared/utils.ts";
+import type { ASNIntel } from "../../shared/types.ts";
 
 
-export interface ASNIntel {
-  asn: string;
-  prefix: string;
-  country: string;
-}
 
 
 export async function getASNInfo(ip: string): Promise<ASNIntel> {
   // Validamos IP básica para evitar consultas basura
   if (!ip || ip === "0.0.0.0") {
-    return { asn: "AS_UNKNOWN", prefix: "Unknown", country: "Unknown" };
+    return { asn: null , prefix: null, country: null };
   }
 
   const revIp = ip.split(".").reverse().join(".");
@@ -27,9 +23,9 @@ export async function getASNInfo(ip: string): Promise<ASNIntel> {
     if (firstEntry) {
       const parts = firstEntry.split("|").map(p => p.trim());
       return {
-        asn: parts[0] ? `AS${parts[0]}` : "AS_UNKNOWN",
-        prefix: parts[1] || "Unknown",
-        country: parts[2] || "Unknown",
+        asn: parts[0] ? `AS${parts[0]}` : null,
+        prefix: parts[1] || null,
+        country: parts[2] || null,
       };
     }
   } catch (e: unknown) {
@@ -37,7 +33,7 @@ export async function getASNInfo(ip: string): Promise<ASNIntel> {
     logger.info("ASN-LOOKUP", getErrorMessage(e));
   }
 
-  return { asn: "AS_UNKNOWN", prefix: "Unknown", country: "Unknown" };
+  return { asn: null, prefix: null, country: null };
 }
 
 
