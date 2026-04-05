@@ -14,7 +14,7 @@ export class Orchestrator {
   async start(target: string) {
     const finalResults: AnalyzedTarget[] = [];
     const activeWorkers = new Set<Promise<void>>();
-    logger.info("ORQUESTADOR", "iniciando....");
+    logger.info(PHASES.ORCHESTRATOR, "iniciando....");
     // Fase 1: Sigue siendo un Stream (la fuente)
     const subdomainStream = reconPhase(target);
     console.log(subdomainStream);
