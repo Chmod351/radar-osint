@@ -15,9 +15,11 @@ export class Orchestrator {
     const finalResults: AnalyzedTarget[] = [];
     const activeWorkers = new Set<Promise<void>>();
     logger.info(PHASES.ORCHESTRATOR, "iniciando....");
+
+
+
     // Fase 1: Sigue siendo un Stream (la fuente)
     const subdomainStream = reconPhase(target);
-    console.log(subdomainStream);
     for await (const sub of subdomainStream) {
       if (activeWorkers.size >= this.concurrencyLimit) {
         await Promise.race(activeWorkers);
