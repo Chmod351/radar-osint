@@ -1,5 +1,5 @@
 import { execa } from "execa";
-import { subfinder, assetfinder } from "../../shared/utils.ts";
+import { subfinder, assetfinder, PHASES } from "../../shared/utils.ts";
 import readline from "readline";
 import { logger } from "../../shared/errorLogger.ts";
 
@@ -46,7 +46,7 @@ async function* runSubdomainStream(cmd: string, args: string[]): AsyncIterable<s
  */
 export async function* streamAllSubdomains(target: string): AsyncIterable<string> {
   const seen = new Set<string>(); // Memoria para evitar duplicados
-  logger.info("RECON", `[*] Radar activado: Escaneo paralelo para ${target}`);
+  logger.info(PHASES.RECON, `[*] Radar activado: Escaneo paralelo para ${target}`);
 
   const sources = [
     { name: "Subfinder", cmd: subfinder, args: ["-d", target, "-silent"] },
@@ -83,7 +83,7 @@ export async function* streamAllSubdomains(target: string): AsyncIterable<string
         signalResolver();
         signalResolver = null;
       }
-      logger.info("RECON", `Fuente ${source.name} completada.`);
+      logger.info(PHASES.RECON, `Fuente ${source.name} completada.`);
     }
   });
 
@@ -99,5 +99,5 @@ export async function* streamAllSubdomains(target: string): AsyncIterable<string
     }
   }
 
-  logger.info("RECON", `[#] Recon finalizado. Objetivos únicos: ${seen.size}`);
+  logger.info(PHASES.RECON, `[#] Recon finalizado. Objetivos únicos: ${seen.size}`);
 }
