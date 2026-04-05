@@ -28,6 +28,13 @@ export const PHASES={
 ORCHESTRATOR:"ORCHESTRATOR",
 }as const;
 
+export const LOGGER={
+ERROR:0,
+WARN:1,
+INFO:2,
+DEBUG:3
+}as const;
+
 
 export const SENSORS = {
   INFRA_TYPE: {
