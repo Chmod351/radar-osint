@@ -1,7 +1,7 @@
 import { reconPhase } from "../phases/01-recon/index-recon.ts";
 import { dnsPhaseStream } from "../phases/02-dns/index-dns.ts";
 import { fingerprintingPhase } from "../phases/03-http/index-http.ts";
-import { getErrorMessage, OP_DIR, TARGET } from "../shared/utils.ts";
+import { getErrorMessage, OP_DIR, PHASES, SENSORS, TARGET } from "../shared/utils.ts";
 import { logger } from "../shared/errorLogger.ts";
 import { dashboard } from "../ui/dashboard.ts";
 import type { AnalyzedTarget } from "../shared/types.ts";
@@ -31,21 +31,21 @@ export class Orchestrator {
 
 
           if (normalized) {
-            if (normalized.action !== "DUPLICATE_ALIAS" &&  normalized.action !=="SCAN_FAILED") {
+            if (normalized.action !== SENSORS.ACTION.DUPLICATE &&  normalized.action !==SENSORS.ACTION.SCAN_FAILED) {
             // LLAMADA ATÓMICA 2: HTTP/NMAP
               const fullyEnriched = await fingerprintingPhase(normalized);
               if (fullyEnriched) {
                 normalized=normalizeTarget(fullyEnriched);
                 finalResults.push(normalized);
-                logger.info("ORCHESTADOR", `Target completado: ${sub}`);
+                logger.info(PHASES.ORCHESTRATOR, `Target completado: ${sub}`);
               }
             } else {
               finalResults.push(normalized);
-              logger.info("ORCHESTADOR", `Omitiendo escaneo profundo para : ${sub}`);
+              logger.info(PHASES.ORCHESTRATOR, `Omitiendo escaneo profundo para : ${sub}`);
             }
           }
         } catch (e:unknown) {
-          logger.error("ORQUESTADOR",getErrorMessage(e) );
+          logger.error(PHASES.ORCHESTRATOR,getErrorMessage(e) );
         }
       })();
 
@@ -77,7 +77,7 @@ async function main(target:string) {
     // ACÁ ES DONDE SUCEDE LA MAGIA
     await orchestrator.start(target);
   } catch (error) {
-    logger.error("ORQUESTADOR:",`ERROR AL INTENTAR EJECUTAR EL ORQUESTADOR ${error}`);
+    logger.error(PHASES.ORCHESTRATOR,`ERROR AL INTENTAR EJECUTAR EL ORQUESTADOR ${error}`);
     process.exit(1);
   }
 }
