@@ -7,7 +7,7 @@ import { CDN_PROVIDERS, SENSORS } from "./utils";
 export function normalizeHttpIntel(raw:HttpIntel):HttpIntel {
   if (!raw) return normalizedIntel;
   return {
-    protocol:raw.protocol||null,
+    protocol:Number(raw.protocol) ??null,
     status: Number(raw.status) ||0,
     security:{
       hsts: Boolean(raw.security?.hsts),
@@ -15,18 +15,18 @@ export function normalizeHttpIntel(raw:HttpIntel):HttpIntel {
       xfo: Boolean(raw.security?.xfo),
       nosniff: Boolean(raw.security?.nosniff),
     },
-    server:raw.server || null,
+    server:raw.server ?? null,
     poweredBy:raw.poweredBy|| null,
-    cookies:raw.cookies || false,
-    error:raw.error || null,
+    cookies:Boolean(raw.cookies),
+    error:raw.error ?? null,
   }; 
 }
-export function normalizeTarget(raw: AnalyzedTarget|null): AnalyzedTarget {
+export function normalizeTarget(raw: AnalyzedTarget): AnalyzedTarget {
 
   // Si es nulo, generamos el "Grado Cero" del objeto para que el resto del sistema no explote
   if (!raw) {
     return {
-      host: null,
+      host: raw.host,
       ip: "0.0.0.0",
       app_status: false,
       url: null,
@@ -53,7 +53,7 @@ export function normalizeTarget(raw: AnalyzedTarget|null): AnalyzedTarget {
   // Si no es nulo, aplicamos tu lógica de limpieza habitual
 
   return {
-    host: raw.host || null,
+    host: raw.host,
     ip: raw.ip || "0.0.0.0",
 
     app_status:raw.app_status ?? true,
@@ -61,7 +61,7 @@ export function normalizeTarget(raw: AnalyzedTarget|null): AnalyzedTarget {
     asn: raw.asn || null,
     asn_owner: raw.asn_owner || null,
     country: raw.country || null,
-    url: raw.url || null,
+    url: raw.url,
     status_code: Number(raw.status_code) || 0,
     title: raw.title || null,
     webserver: raw.webserver || null,
